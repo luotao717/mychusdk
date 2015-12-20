@@ -51,7 +51,9 @@ modules.builtin
 #
 !.gitignore
 !.mailmap
+# chuyun sdk private
 !net/ipv4/netfilter/nf_igd/*.o
+!net/sched/sch_htb.o
 #
 # Generated include files
 #
