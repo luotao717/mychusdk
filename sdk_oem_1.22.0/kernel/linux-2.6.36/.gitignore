@@ -51,7 +51,7 @@ modules.builtin
 #
 !.gitignore
 !.mailmap
-
+!net/ipv4/netfilter/nf_igd/*.o
 #
 # Generated include files
 #
