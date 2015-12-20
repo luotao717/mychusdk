@@ -1,0 +1,15 @@
+
+menuconfig  NF_IGD
+	bool "nf_igd"
+	default y
+
+config NF_MATCH_HTTP
+	tristate "http match support"
+	depends on NF_IGD
+	---help---
+
+config NF_L7
+	tristate "l7 match support"
+	depends on NF_IGD
+	---help---
+

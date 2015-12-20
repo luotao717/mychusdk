@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta http-equiv="Pragma" contect="no-cache">
+        <meta http-equiv="cache-control" content="no-cache">
+        <meta http-equiv="expires" content="0">
+        <meta name="Keywords" content="">
+        <meta name="Description" content="">
+        <title>爱路由设置</title>
+        <link rel="stylesheet" href="../css/base.css">
+        <link rel="stylesheet" href="../css/router.css">
+        <link rel="stylesheet" href="../css/jquery.mCustomScrollbar.css">
+        <script type="text/javascript" src="../js/jquery.js"></script>
+        <script type="text/javascript" src="../js/jquery.cookie.js"></script> 
+        <script language="javascript" type="text/javascript" src="../js/common.js"></script>
+        <script language="javascript" type="text/javascript" src="../js/config.js"></script>
+        <script type="text/javascript" src="../js/layer/layer.js"></script>
+        <script type="text/javascript" src="../js/jquery.mCustomScrollbar.concat.min.js"></script>
+        <script type="text/javascript" src="../js/user.js"></script>
+        <script type="text/javascript" src="../js/router.js"></script>
+        <script>
+            if ($.cookie('lstatus') != 'true') {
+                $.cookie('lstatus', false, {path: '/'});
+                document.location = 'http://' + document.domain + "/index.html?tt=" + new Date().getTime();
+            }
+        </script>        
+
+        <!--[if IE 6]>
+            <script type="text/javascript" src="../js/DD_belatedPNG.min.js"></script>
+            <script type="text/javascript">
+            DD_belatedPNG.fix("img,.png_ie,.lvl");
+            </script>
+        <![endif]-->
+        <!--[if lt IE 9]>
+            <script src="../js/respond.min.js"></script>
+        <![endif]-->
+    </head>
+
+    <body>
+        <div class="top">
+            <a href="index.html" class="logo-box"><img src="../images/logo.png" width="166"></a>
+        </div>
+        <div class="menu">
+            <a>我的路由<i class="png_ie i-1"></i></a>
+            <a>网络设置<i class="png_ie i-2"></i></a>
+            <a class="selected">无线设置<i class="png_ie i-5"></i></a>
+            <a>了解更多<i class="png_ie i-3"></i></a>
+            <a>固件升级<i class="png_ie i-4"></i></a>
+        </div>
+        <div class="wrap">	
+            <div class="content wireless_con">
+                <div class="img-box"><img src="../images/logo.png"></div>
+                <div class="nav" style="border:none;">
+                    <span class="navsp">WIFI开关</span>
+                    <span class="navsp"><label for="r1">开启</label><input class="navsp_rad" type="radio" id="r1" name="onOff" value="1"></span>
+                    <span class="navsp"><label for="r2">关闭</label><input class="navsp_rad" type="radio" id="r2" name="onOff" value="0"></span>
+                </div>
+                <div class="sub">
+                    <!-- 宽带拨号 -->
+                    <div class="sub-box" style="position:relative;" id="wifiOnOff">
+                        <div class="hidbox"><input class="navsp_rad" type="checkbox" name="ssid_name" id="hidden_ssid">隐藏无线名称</div>
+                        <ul class="list">
+                            <li>
+                                <span class="sp-l">无线名称</span>
+                                <span class="sp-r">
+                                    <label for="ssid">请输入无线名称</label>
+                                    <input type="text" name="ssid" class="inpt" id="ssid" autocomplete="off">
+                                </span>
+                            </li>
+                            <li>
+                                <span class="sp-l">无线密码</span>
+                                <span class="sp-r">
+                                    <label for="wifi_pwd">请输入无线密码</label>
+                                    <input type="password" name="wifi_pwd" class="inpt" id="wifi_pwd" autocomplete="off">
+                                </span>
+                            </li>
+                            <li>
+                                <span class="sp-l">无线信道</span>
+                                <span class="sp-r">
+                                    <select id="wifiChannel" name="wifiChannel" class="wifiSel">
+                                        <option value="0">自动</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                        <option value="6">6</option>
+                                        <option value="7">7</option>
+                                        <option value="8">8</option>
+                                        <option value="9">9</option>
+                                        <option value="10">10</option>
+                                        <option value="11">11</option>
+                                        <option value="12">12</option>
+                                        <option value="13">13</option>
+                                    </select>
+                                </span>
+                            </li>
+                            <li>
+                                <span class="sp-l">信道频宽</span>
+                                <span class="sp-r">
+                                    <select id="wifiBandwidth" name="wifiBandwidth" class="wifiSel">
+                                        <option value="0">20MHz</option>
+                                        <option value="1">20/40MHz</option>
+                                    </select>
+                                </span>
+                            </li>
+                        </ul>
+
+                        <div class="btn-box"><a href="javascript:;" class="btn" id="wifi_set_confirm">确定</a></div>         	
+
+                    </div>
+                    <!-- 宽带拨号 end-->
+
+
+
+
+
+
+                </div>
+
+            </div>
+        </div>
+
+
+
+
+
+
+    </body>
+</html>
+<script type="text/javascript">
+    wifiGet();
+</script>
+
+

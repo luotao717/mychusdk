@@ -1,0 +1,103 @@
+Index: linux-2.6.36/arch/mips/Kconfig
+===================================================================
+--- linux-2.6.36.orig/arch/mips/Kconfig
++++ linux-2.6.36/arch/mips/Kconfig
+@@ -1792,4 +1792,3 @@ source "crypto/Kconfig"
+ 
+ source "lib/Kconfig"
+ 
+-source "ralink/Kconfig"
+Index: linux-2.6.36/include/linux/Kbuild
+===================================================================
+--- linux-2.6.36.orig/include/linux/Kbuild
++++ linux-2.6.36/include/linux/Kbuild
+@@ -391,3 +391,4 @@ header-y += wireless.h
+ header-y += x25.h
+ header-y += xattr.h
+ header-y += xfrm.h
++header-y += switch.h
+Index: linux-2.6.36/include/linux/netfilter/Kbuild
+===================================================================
+--- linux-2.6.36.orig/include/linux/netfilter/Kbuild
++++ linux-2.6.36/include/linux/netfilter/Kbuild
+@@ -62,3 +62,4 @@ header-y += xt_tcpmss.h
+ header-y += xt_tcpudp.h
+ header-y += xt_time.h
+ header-y += xt_u32.h
++header-y += xt_layer7.h
+Index: linux-2.6.36/include/linux/kernel.h
+===================================================================
+--- linux-2.6.36.orig/include/linux/kernel.h
++++ linux-2.6.36/include/linux/kernel.h
+@@ -756,7 +756,9 @@ struct sysinfo {
+ };
+ 
+ /* Force a compilation error if condition is true */
++#ifndef BUILD_BUG_ON
+ #define BUILD_BUG_ON(condition) ((void)BUILD_BUG_ON_ZERO(condition))
++#endif
+ 
+ /* Force a compilation error if condition is constant and true */
+ #define MAYBE_BUILD_BUG_ON(cond) ((void)sizeof(char[1 - 2 * !!(cond)]))
+Index: linux-2.6.36/net/ipv4/netfilter/ip_tables.c
+===================================================================
+--- linux-2.6.36.orig/net/ipv4/netfilter/ip_tables.c
++++ linux-2.6.36/net/ipv4/netfilter/ip_tables.c
+@@ -41,6 +41,7 @@ MODULE_DESCRIPTION("IPv4 packet filter")
+ #if defined (CONFIG_NAT_FCONE) || defined (CONFIG_NAT_RCONE)
+ unsigned char wan_name[IFNAMSIZ];
+ #endif
++EXPORT_SYMBOL(wan_name);
+ 
+ #ifdef DEBUG_IP_FIREWALL
+ #define dprintf(format, args...) pr_info(format , ## args)
+Index: linux-2.6.36/net/wireless/Kconfig
+===================================================================
+--- linux-2.6.36.orig/net/wireless/Kconfig
++++ linux-2.6.36/net/wireless/Kconfig
+@@ -1,5 +1,5 @@
+ config WIRELESS_EXT
+-	bool
++	bool "Wireless extensions"
+ 
+ config WEXT_CORE
+ 	def_bool y
+@@ -11,10 +11,10 @@ config WEXT_PROC
+ 	depends on WEXT_CORE
+ 
+ config WEXT_SPY
+-	bool
++	bool "WEXT_SPY"
+ 
+ config WEXT_PRIV
+-	bool
++	bool "WEXT_PRIV"
+ 
+ config CFG80211
+ 	tristate "cfg80211 - wireless configuration API"
+Index: linux-2.6.36/sound/core/Kconfig
+===================================================================
+--- linux-2.6.36.orig/sound/core/Kconfig
++++ linux-2.6.36/sound/core/Kconfig
+@@ -8,7 +8,7 @@ config SND_PCM
+ 	select GCD
+ 
+ config SND_HWDEP
+-	tristate
++	tristate "Sound hardware support"
+ 
+ config SND_RAWMIDI
+ 	tristate
+Index: linux-2.6.36/arch/mips/ralink/setup.c
+===================================================================
+--- linux-2.6.36.orig/arch/mips/ralink/setup.c
++++ linux-2.6.36/arch/mips/ralink/setup.c
+@@ -97,6 +97,8 @@ extern void mips_time_init(void);
+ extern void mips_timer_setup(struct irqaction *irq);
+ 
+ int coherentio = -1;    /* no DMA cache coherency (may be set by user) */
++EXPORT_SYMBOL(coherentio);
++
+ int hw_coherentio;      /* init to 0 => no HW DMA cache coherency (reflects real HW) */
+ static int __init setcoherentio(char *str)
+ {

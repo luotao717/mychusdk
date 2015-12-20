@@ -1,0 +1,21 @@
+#!/bin/sh /etc/rc.common
+
+SERVICE_USE_PID=1
+START=80
+
+start() {
+	rmmod l7
+	mkdir /tmp/l7_tmp/
+	mv /tmp/rconf/l7.tar.gz /tmp/l7_tmp/
+	cd /tmp/l7_tmp/
+	tar -zxvf l7.tar.gz
+	if [ $? -eq 0 ];then
+		echo "tar l7.tar.gz succ"
+		insmod l7
+		l7_load
+	else
+		echo "tar l7.tar.gz fail"
+		rm -rf /tmp/l7_tmp
+	fi
+}
+
