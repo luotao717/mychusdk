@@ -314,7 +314,11 @@ drop:
 	return -1;
 }
 
+#ifdef CONFIG_NF_IGD
+int ip_rcv_finish(struct sk_buff *skb)
+#else
 static int ip_rcv_finish(struct sk_buff *skb)
+#endif
 {
 	const struct iphdr *iph = ip_hdr(skb);
 	struct rtable *rt;
@@ -450,3 +454,6 @@ drop:
 out:
 	return NET_RX_DROP;
 }
+#ifdef CONFIG_NF_IGD
+EXPORT_SYMBOL(ip_rcv_finish);
+#endif

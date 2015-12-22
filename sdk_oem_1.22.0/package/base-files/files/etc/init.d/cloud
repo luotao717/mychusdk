@@ -9,11 +9,12 @@ start() {
 	cp -rf /etc/rconf /tmp
 	if [ $? -eq 0 ];then
 		echo "tar rconf.tar.gz succ"
+		cp /etc/rconf_check /tmp/rconf_check
 	else
 		echo "tar rconf.tar.gz fail"
 		rm -rf /tmp/rconf
 	fi
-	cloud_client&
+	cloud_client &
 
 	#ipv4
 	echo "1" > /proc/sys/net/ipv4/ip_forward
@@ -53,7 +54,6 @@ start() {
 
 stop() {
 	killall cloud_client
-	killall cloud_exchange
 }
 
 

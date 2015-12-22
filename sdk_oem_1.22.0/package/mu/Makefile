@@ -18,7 +18,7 @@ define Package/$(PKG_NAME)
   SECTION:=base
   CATEGORY:=Base system
   TITLE:=mu
-  DEPENDS:=libshare libuci libubox +libuuid iptables
+  DEPENDS:=libshare libuci libubox iptables
 endef
 
 define Build/Prepare

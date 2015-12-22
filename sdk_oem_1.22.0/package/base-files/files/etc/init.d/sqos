@@ -3,7 +3,8 @@
 SERVICE_USE_PID=1
 START=80
 
+kver=`ls /lib/modules`
 start() {
-	insmod sqos 
+	insmod /lib/modules/${kver}/sqos.ko
 }
 

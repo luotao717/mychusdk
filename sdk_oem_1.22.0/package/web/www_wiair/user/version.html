@@ -59,7 +59,7 @@
         var ProgressBar = {
             maxValue: 100,
             value: 0,
-            SetValue: function(aValue) {
+            SetValue: function (aValue) {
                 this.value = aValue;
                 if (this.value >= this.maxValue)
                     this.value = this.maxValue;
@@ -77,7 +77,7 @@
                 url: actionUrl,
                 data: "fname=system&opt=firmstatus&function=get",
                 dataType: "JSON",
-                success: function(data) {
+                success: function (data) {
                     var jsonObject = data;
                     if (jsonObject.error == 0) {
                         $("#version").text('当前固件版本：' + jsonObject.localfirm_version);
@@ -97,12 +97,7 @@
                             layer.alert('升级失败！');
                         }
                     } else {
-                        if (data.error == 10007) {
-                            $.cookie('lstatus', false, {path: '/'});
-                            document.location = 'http://' + document.domain;
-                        } else {
-                            getMobileMsg(getErrorCode(data.error));
-                        }
+                        locationUrl(jsonObject.error);
                     }
                 }
             });
@@ -116,7 +111,7 @@
                 url: actionUrl,
                 data: "fname=system&opt=firmstatus&function=set&flag=get",
                 dataType: "JSON",
-                success: function(doStatus) {
+                success: function (doStatus) {
                     if (doStatus.error == 0) {
                         layer.open({
                             type: 1,
@@ -130,13 +125,13 @@
                         ProgressBar.maxValue = 100;
 //                        设置当前刻度
                         var index = 0;
-                        var mProgressTimer = window.setInterval(function() {
+                        var mProgressTimer = window.setInterval(function () {
                             $.ajax({
                                 type: "POST",
                                 url: actionUrl,
                                 data: "fname=system&opt=firmstatus&function=get",
                                 dataType: "JSON",
-                                success: function(jsonDoad) {
+                                success: function (jsonDoad) {
                                     if (jsonDoad.error == 0) {
                                         index = ((jsonDoad.curl / jsonDoad.total) * 100).toFixed(2);
                                         ProgressBar.SetValue(index);
@@ -163,14 +158,14 @@
                 url: actionUrl,
                 data: "fname=system&opt=firmup&function=set",
                 dataType: "JSON",
-                success: function(data) {
+                success: function (data) {
                     var jsonObject = data;
                     if (jsonObject.error == 0) {
                         $("#update_1").val("正在升级...");
                         $("#update_1").attr('disabled', true);
                         $("#getMsg").show().text("正在升级，可能需要三分钟。升级过程中请勿操作或断电,升级完成后会自动进入详情页。");
                         var sec = 180;
-                        setInterval(function() {
+                        setInterval(function () {
                             sec--;
                             if (sec == 0) {
                                 document.location = 'index.html';
@@ -191,7 +186,7 @@
                 data: "fname=system&opt=local_firmup&function=set",
                 async: false,
                 dataType: "json",
-                success: function(data) {
+                success: function (data) {
                     var jsonObject = data;
                     if (jsonObject.error == 0) {
                         document.getElementById("_submit").value = "升级中...";
@@ -228,7 +223,7 @@
                     document.getElementById("msg").innerHTML = "正在上传，请稍候...";
                     document.getElementById("form1").action = "/upload.csp?uploadpath=/tmp/ioos&t=firmware.bin";
                     document.getElementById("form1").submit();
-                    interval = setInterval(function() {
+                    interval = setInterval(function () {
                         if (timeout > timeoutCount - 1) {
                             timeout = 0;
                             clearInterval(interval);
@@ -252,7 +247,7 @@
                 url: actionUrl,
                 data: "fname=net&opt=upload_status&function=get",
                 dataType: "json",
-                success: function(data) {
+                success: function (data) {
                     var jsonObject = data;
                     if (jsonObject.error == 0) {
                         if (jsonObject.status == 1) {
@@ -261,6 +256,8 @@
                             timeout = 0;
                             setUpgrade();
                         }
+                    } else {
+                        locationUrl(jsonObject.error);
                     }
                 }
             });
@@ -270,7 +267,7 @@
         var barTimer = 500;
         if (syj == null)
             var syj = {};
-        syj.ProgressBar = function(parent, width, barClass, display) {
+        syj.ProgressBar = function (parent, width, barClass, display) {
             this.parent = parent;
             this.pixels = width;
             this.parent.innerHTML = "<div/>";
@@ -284,7 +281,7 @@
             this.parent.style.display = display == false ? 'none' : 'block';
         }
 
-        syj.ProgressBar.prototype.setPercent = function(pct) {
+        syj.ProgressBar.prototype.setPercent = function (pct) {
             var fillPixels;
             if (pct < 0.99) {
                 fillPixels = this.pixels * pct;
@@ -302,7 +299,7 @@
             this.fillDIV.style.width = fillPixels + "px";
         }
 
-        syj.ProgressBar.prototype.display = function(v) {
+        syj.ProgressBar.prototype.display = function (v) {
             this.parent.style.display = v == true ? 'block' : 'none';
         }
 
@@ -345,6 +342,7 @@
             <a>我的路由<i class="png_ie i-1"></i></a>
             <a>网络设置<i class="png_ie i-2"></i></a>
             <a>无线设置<i class="png_ie i-5"></i></a>
+            <a>VPN设置<i class="png_ie i-6"></i></a>
             <a>了解更多<i class="png_ie i-3"></i></a>
             <a class="selected">固件升级<i class="png_ie i-4"></i></a>
         </div>

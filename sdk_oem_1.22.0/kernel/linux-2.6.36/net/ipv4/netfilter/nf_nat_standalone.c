@@ -149,12 +149,21 @@ nf_nat_fn(unsigned int hooknum,
 	return nf_nat_packet(ct, ctinfo, hooknum, skb);
 }
 
+#ifdef CONFIG_NF_IGD
+unsigned int
+nf_nat_in(unsigned int hooknum,
+	  struct sk_buff *skb,
+	  const struct net_device *in,
+	  const struct net_device *out,
+	  int (*okfn)(struct sk_buff *))
+#else
 static unsigned int
 nf_nat_in(unsigned int hooknum,
 	  struct sk_buff *skb,
 	  const struct net_device *in,
 	  const struct net_device *out,
 	  int (*okfn)(struct sk_buff *))
+#endif
 {
 	unsigned int ret;
 	__be32 daddr = ip_hdr(skb)->daddr;
@@ -166,6 +175,10 @@ nf_nat_in(unsigned int hooknum,
 
 	return ret;
 }
+
+#ifdef CONFIG_NF_IGD
+EXPORT_SYMBOL(nf_nat_in);
+#endif
 
 static unsigned int
 nf_nat_out(unsigned int hooknum,

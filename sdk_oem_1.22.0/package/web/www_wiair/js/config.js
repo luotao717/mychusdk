@@ -32,6 +32,11 @@ var accountPwdReason = 19;
 var userLoginStatus = 0;
 var str_md5;
 var mob = getMobile();
+var vpnUrl = 'http://123.59.70.97:8086/vpn/service/data';
+var vpnJson;
+var vpnJsonObject;
+var dhcpdmac;
+var vpnOnlineStatus;
 
 /*
  * 获取wanConfigJson
@@ -43,7 +48,7 @@ function getWanConfigJsonObject() {
         data: "fname=net&opt=wan_conf&function=get",
         async: false,
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 wanConfigJsonObject = jsonObject;
@@ -132,7 +137,7 @@ function setPPPOE(ppoe) {
             url: actionUrl,
             data: "fname=net&opt=wan_conf&function=set&user=" + account + "&passwd=" + passwd + "&mode=2&mtu=" + mtu + "&dns=" + dns + "&dns1=" + dns1 + "&mac=" + mac,
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 currentMode = 2;
                 var jsonObject = data;
                 if (jsonObject.error == 0) {
@@ -143,7 +148,7 @@ function setPPPOE(ppoe) {
                     $("#btn_1").val("开始拨号");
                     return;
                 }
-            }, error: function() {
+            }, error: function () {
                 getMobileMsg('拨号超时,请重新连接路由器！');
                 return;
             }
@@ -242,7 +247,7 @@ function setStatic(stat) {
             url: actionUrl,
             data: "fname=net&opt=wan_conf&function=set&ip=" + static_ip + "&mask=" + static_mask + "&gw=" + static_gw + "&dns=" + static_dns + "&mode=3&dns1=" + static_dns1 + "&mtu=" + mtu + "&mac=" + mac,
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 currentMode = 3;
                 var jsonObject = data;
                 if (jsonObject.error == 0) {
@@ -253,7 +258,7 @@ function setStatic(stat) {
                     $("#btn_2").val("确 认");
                     return;
                 }
-            }, error: function() {
+            }, error: function () {
                 getMobileMsg('静态IP配置超时,请重新连接路由器！');
                 return;
             }
@@ -319,7 +324,7 @@ function setDHCP(dhcp) {
             url: actionUrl,
             data: "fname=net&opt=wan_conf&function=set&mode=1&mtu=" + mtu + "&dns=" + dns + "&dns1=" + dns1 + "&mac=" + mac,
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 currentMode = 1;
                 var jsonObject = data;
                 if (jsonObject.error == 0) {
@@ -330,7 +335,7 @@ function setDHCP(dhcp) {
                     $("#btn_3").val("确 认");
                     return;
                 }
-            }, error: function() {
+            }, error: function () {
                 getMobileMsg('动态IP配置超时,请重新连接路由器！');
                 return;
             }
@@ -354,7 +359,7 @@ function getWanInfoJsonObject() {
         data: "fname=net&opt=wan_info&function=get",
         async: false,
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 wanInfoJsonObject = jsonObject;
@@ -380,7 +385,7 @@ function getWanInfo(choice) {
         data: "fname=net&opt=wan_info&function=get",
         async: false,
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 if (jsonObject.connected == 1) {
@@ -406,7 +411,7 @@ function getWanInfo(choice) {
             } else {
                 locationUrl(data.error);
             }
-        }, error: function() {
+        }, error: function () {
             getMobileMsg('请重启路由器！');
         }
     });
@@ -421,11 +426,11 @@ function checkWanDetect() {
         url: actionUrl,
         data: "fname=net&opt=wan_detect&function=get",
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 if (jsonObject.wan_link == 0) {
-                    checkWanDetectLinkInterval = setInterval(function() {
+                    checkWanDetectLinkInterval = setInterval(function () {
                         checkWanDetectLink();
                     }, 2000);
                 } else {
@@ -458,7 +463,7 @@ function checkWanDetect() {
                                 showStatic();
                             }
                         } else if (jsonObject.mode == 0) {//checking
-                            checkWanDetectModeInterval = setInterval(function() {
+                            checkWanDetectModeInterval = setInterval(function () {
                                 if (timeoutCheck > timeoutCheckCount - 1) {
                                     timeoutCheck = 0;
                                     clearInterval(checkWanDetectModeInterval);
@@ -493,7 +498,7 @@ function checkWanDetectLink() {
         url: actionUrl,
         data: "fname=net&opt=wan_detect&function=get",
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.wan_link == 1) {
                 clearInterval(checkWanDetectLinkInterval);
@@ -542,7 +547,7 @@ function checkWanDetectModel() {
         url: actionUrl,
         data: "fname=net&opt=wan_detect&function=get",
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.mode > 0) {
                 clearInterval(checkWanDetectModeInterval);
@@ -603,7 +608,7 @@ function tab(type) {
                 url: actionUrl,
                 data: "fname=net&opt=dhcpd&function=get",
                 dataType: "json",
-                success: function(data) {
+                success: function (data) {
                     var jsonObject = data;
                     if (jsonObject.error == 0) {
                         var static_ip = jsonObject.ip == null ? "" : jsonObject.ip;
@@ -649,7 +654,7 @@ function checkConfig() {
             data: "fname=net&opt=wan_conf&function=get",
             async: false,
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 var jsonWanConfigObject = data;
                 if (jsonWanConfigObject.error == 0) {
                     wanConfigJsonObject = jsonWanConfigObject;
@@ -672,7 +677,7 @@ function checkConfig() {
                             url: actionUrl,
                             data: "fname=system&opt=device_check&function=get",
                             dataType: "json",
-                            success: function(data) {
+                            success: function (data) {
                                 var jsonObject = data;
                                 if (jsonObject.config_status == 0) {	//no config
                                     isConfiged = false;
@@ -685,7 +690,7 @@ function checkConfig() {
                                     getWanInfoJsonObject();
                                     if (wanInfoJsonObject.error == 0) {
                                         if (wanInfoJsonObject.link == 0) {
-                                            checkWanDetectLinkInterval = setInterval(function() {
+                                            checkWanDetectLinkInterval = setInterval(function () {
                                                 checkWanDetectLink();
                                             }, 2000);
                                         } else if (wanInfoJsonObject.connected == 0) {
@@ -749,14 +754,14 @@ function showPPOE() {
     var li = $("#t_1_box ul").find('li');
     if (wanConfigJsonObject.dns == '' && wanConfigJsonObject.dns1 == '') {
         if (wanConfigJsonObject.oldmode == undefined) {
-            li.each(function(index) {
+            li.each(function (index) {
                 if (index > 1) {
                     $(this).hide();
                     $("#PpoeHightSet").text('高级配置');
                 }
             });
         } else if ((wanConfigJsonObject.olddns !== undefined && wanConfigJsonObject.olddns != '') || (wanConfigJsonObject.olddns1 !== undefined && wanConfigJsonObject.olddns1 != '')) {
-            li.each(function(index) {
+            li.each(function (index) {
                 if (index > 1) {
                     $(this).show();
                     $("#PpoeHightSet").text('简单配置');
@@ -764,7 +769,7 @@ function showPPOE() {
             });
         }
     } else {
-        li.each(function(index) {
+        li.each(function (index) {
             if (index > 1) {
                 $(this).show();
                 $("#PpoeHightSet").text('简单配置');
@@ -805,18 +810,18 @@ function showDHCP() {
     var li = $("#t_3_box ul").find('li');
     if (wanConfigJsonObject.dns == '' && wanConfigJsonObject.dns1 == '') {
         if (wanConfigJsonObject.oldmode == undefined) {
-            li.each(function() {
+            li.each(function () {
                 $(this).hide();
                 $("#DhcpHightSet").text('高级配置');
             });
         } else if ((wanConfigJsonObject.olddns !== undefined && wanConfigJsonObject.olddns != '') || (wanConfigJsonObject.olddns1 !== undefined && wanConfigJsonObject.olddns1 != '')) {
-            li.each(function() {
+            li.each(function () {
                 $(this).show();
                 $("#DhcpHightSet").text('简单配置');
             });
         }
     } else {
-        li.each(function() {
+        li.each(function () {
             $(this).show();
             $("#DhcpHightSet").text('简单配置');
         });
@@ -865,14 +870,14 @@ function showStatic() {
     var li = $("#t_2_box ul").find('li');
     if (wanConfigJsonObject.dns == '' && wanConfigJsonObject.dns1 == '') {
         if (wanConfigJsonObject.oldmode == undefined) {
-            li.each(function(index) {
+            li.each(function (index) {
                 if (index > 2) {
                     $(this).hide();
                     $("#StaticHightSet").text('高级配置');
                 }
             });
         } else if ((wanConfigJsonObject.olddns !== undefined && wanConfigJsonObject.olddns != '') || (wanConfigJsonObject.olddns1 !== undefined && wanConfigJsonObject.olddns1 != '')) {
-            li.each(function(index) {
+            li.each(function (index) {
                 if (index > 2) {
                     $(this).show();
                     $("#StaticHightSet").text('简单配置');
@@ -880,7 +885,7 @@ function showStatic() {
             });
         }
     } else {
-        li.each(function(index) {
+        li.each(function (index) {
             if (index > 2) {
                 $(this).show();
                 $("#StaticHightSet").text('简单配置');
@@ -907,7 +912,7 @@ function userLogin() {
         url: actionUrl,
         data: "fname=system&opt=login&function=set&usrid=" + str_md5,
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 userLoginStatus = 1;
                 $.cookie('lstatus', true);
@@ -927,6 +932,11 @@ function userLogin() {
                 $("#user_login").val('登 录');
                 $("#user_login").attr("disabled", false);
             }
+        }, complete: function (XHR, TS) {
+            XHR = null;
+        },
+        error: function (XHRequest, status, data) {
+            XHRequest.abort();
         }
     });
 }
@@ -977,8 +987,7 @@ function showNetDiv() {
         getWifiList();
         if (wanConfigJsonObject.oldmode == 1) {
             showDHCP();
-        }
-        else if (wanConfigJsonObject.oldmode == 2) {
+        } else if (wanConfigJsonObject.oldmode == 2) {
             showPPOE();
         } else if (wanConfigJsonObject.oldmode == 3) {
             showStatic();
@@ -1018,7 +1027,7 @@ function getWifiList() {
         url: actionUrl,
         data: "fname=net&opt=ap_list&function=get",
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             var jsonWifiListObject = data;
             if (jsonWifiListObject.error == 0) {
                 layer.close(loadingLay);
@@ -1123,17 +1132,17 @@ function connectWisp(ssid, pwd, mac, channel, check_wpa, sec) {
         url: actionUrl,
         data: dat,
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 $.ajax({
                     type: "POST",
                     url: actionUrl,
                     data: dat2,
                     dataType: "JSON",
-                    success: function(jsonWisp) {
+                    success: function (jsonWisp) {
                         if (jsonWisp.error == 0 && jsonWisp.mode == 4) {
                             var sec = 60;
-                            var interval = setInterval(function() {
+                            var interval = setInterval(function () {
                                 sec--;
                                 if (sec == 0) {
                                     window.clearInterval(interval);
@@ -1145,7 +1154,7 @@ function connectWisp(ssid, pwd, mac, channel, check_wpa, sec) {
                                         url: actionUrl,
                                         data: "fname=net&opt=wan_info&function=get",
                                         dataType: "JSON",
-                                        success: function(wanObject) {
+                                        success: function (wanObject) {
                                             if (wanObject.error == 0) {
                                                 if (wanObject.connected == 1) {
                                                     window.clearInterval(interval);
@@ -1165,7 +1174,7 @@ function connectWisp(ssid, pwd, mac, channel, check_wpa, sec) {
                                             } else {
                                                 locationUrl(wanObject.error);
                                             }
-                                        }, error: function() {
+                                        }, error: function () {
                                             window.clearInterval(interval);
                                             layer.closeAll();
                                             getMobileMsg('连接超时,请重新连接路由器！');
@@ -1202,7 +1211,7 @@ function getPPPOEAccount() {
         url: actionUrl,
         data: "fname=net&opt=wan_account&function=set",
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 $.ajax({
@@ -1210,7 +1219,7 @@ function getPPPOEAccount() {
                     url: actionUrl,
                     data: "fname=net&opt=wan_account&function=get",
                     dataType: "json",
-                    success: function(data) {
+                    success: function (data) {
                         var jsonObject = data;
                         if (jsonObject.error == 0) {
                             var mob = getMobile();
@@ -1237,7 +1246,7 @@ function getPPPOEAccount() {
                             $('#account_get').empty().text(jsonObject.account);
                             $('#pwd_get').empty().text(jsonObject.passwd);
                         } else {
-                            interval = setInterval(function() {
+                            interval = setInterval(function () {
                                 if (timeout > timeoutCount - 1) {
                                     timeout = 0;
                                     $(".dot").show();
@@ -1252,7 +1261,7 @@ function getPPPOEAccount() {
                                     $(".d2").delay(400).fadeIn();
                                     $(".d3").delay(700).fadeIn();
                                     if (timeout != 0) {
-                                        setTimeout(function() {
+                                        setTimeout(function () {
                                             $(".dot").fadeOut();
                                         }, 1200)
                                     }
@@ -1274,7 +1283,7 @@ function getAccountTimer() {
         url: actionUrl,
         data: "fname=net&opt=wan_account&function=get",
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 var mob = getMobile();
@@ -1311,7 +1320,7 @@ function getAccountTimer() {
 
 function intervalTime(btn, btnText, msgText, mode) {
     responseReason = 0;
-    interval = setInterval(function() {
+    interval = setInterval(function () {
         getWanInfoJsonObject();
         if ((wanInfoJsonObject.link == 0 && mode != 4) || responseReason == 19) {
             timeout = 15;
@@ -1377,4 +1386,192 @@ function getCloneMac(clone) {
         mac = wanConfigJsonObject.rawmac;
     }
     return mac;
+}
+
+function getVpn(param, type) {
+    var par = param;
+    param = JSON.stringify(param);
+    $.ajaxSettings.async = false;
+    $.post(vpnUrl, param, function (data) {
+        vpnJson = data;
+        if (type == 1) {
+            getMobileMsg(data.des);
+            if (vpnJson.code == '110') {
+                vpnOnline(2);
+                if (par.open == '1' && vpnJson.result == 0) {
+                    $('.startvpn').val('关闭VPN');
+                } else {
+                    $('.startvpn').val('开启VPN');
+                }
+            } else if (vpnJson.code == '103' && vpnJson.result == '0') {
+                vpnInfo('set', par.phone, $("#pass_login").val());
+                $("#vpn_login").hide();
+                VpnStatus();
+            } else if (vpnJson.code == '108' && vpnJson.result == '0') {
+                document.location = 'vpn.html';
+            }
+        } else if (type == 2 && vpnJson.code == '107') {
+            if (data.result == 0) {
+                window.open(data.url);
+//                $('#pay_qrcode').attr('href', data.url);
+
+                if (mob == 1) {
+                    $("#vpnpackages").hide();
+                    $("#vpn_to_pay").show();
+                } else {
+                    loading(1, $("#vpn_to_pay"), 2);
+                }
+            } else {
+                getMobileMsg(data.des);
+                setTimeout(function () {
+                    if (data.result == '133') {
+                        $("#vpnpackages").hide();
+                        $("#vpn_login").show();
+                    }
+                }, '3000');
+            }
+        } else if (type == 2 && vpnJson.code == '102') {
+            if (vpnJson.result == 0) {
+                vpnInfo('set', par.phone, $("#vpnpass").val());
+                getMobileMsg('注册成功！');
+                setTimeout(function () {
+                    layer.closeAll();
+                    VpnStatus();
+                }, 3000);
+            } else {
+                getMobileMsg(vpnJson.des);
+            }
+        } else if (type == 2 && vpnJson.code == '111') {
+            vpnOnlineStatus = vpnJson.open;
+        }
+    }, 'json').error(function () {
+        getMobileMsg('VPN服务器异常，请稍候重试！');
+        return;
+    });
+}
+
+function VpnStatus() {
+    vpnInfo('get');
+    var param = {};
+    param.code = '109';
+    param.product = '0001';
+    param.phone = vpnJsonObject.user;
+    param.pass = $.md5(vpnJsonObject.password);
+    if (param.phone == '') {
+//        loading(1, $("#vpn_login"), 2);
+        $("#vpn_login").show();
+        return;
+    }
+    getVpn(param, 0);
+    if (vpnJson === undefined) {
+        return;
+    }
+    if (dhcpdmac === undefined) {
+        getdhcpdmac();
+    }
+    var list = vpnJson.packages;
+    var listCode = vpnJson.code;
+    if (list === undefined) {
+        VpnPackage();
+    } else if (list.length > 0) {
+        vpnOnline(2);
+        vpnhtml(list, listCode);
+    }
+}
+
+function VpnPackage() {
+    var param = {};
+    param.code = '106';
+    param.product = '0001';
+    getVpn(param, 0);
+    if (vpnJson === undefined) {
+        return;
+    }
+    var list = vpnJson.packages;
+    if (list.length > 0) {
+        vpnhtml(list, vpnJson.code);
+    }
+}
+
+function vpnhtml(list, code) {
+    var html = '';
+    var startButton = '';
+    for (var i = 0; i < list.length; i++) {
+        if (code == '106') {
+            html += '<li><label><input data=' + list[i].price + ' type="radio" value=' + list[i].id + ' name="choicepackage" class="rdo">' + list[i].name + '（仅需' + list[i].price + '元！即可' + list[i].name + '使用！）</label></li>';
+        } else if (code == '109') {
+            if (vpnOnlineStatus == '1') {
+                startButton = '关闭VPN';
+            } else {
+                startButton = '启动VPN';
+            }
+            html += '<div class="tc-box"><p class="tc-desc"> 当前套餐：' + list[i].name + '</p><p class="tc-desc">起止时间：' + list[i].expire + '</p><p class="tc-desc">' + list[i].content + '</p></div><div class="vpn-btn"><input type="button" class="btn startvpn" name="start_vpn" id=' + list[i].buyid + ' value=' + startButton + '></div>';
+        }
+    }
+    if (code == '106') {
+        $("#vpnshowlist").empty().html(html);
+        $("#vpnpackages").show();
+    } else if (code == '109') {
+        $("#hvpnp").show();
+        $("#hvpnlist").empty().html(html).show();
+    }
+}
+
+function vpnInfo(type, user, pwd) {
+    var param = {};
+    param.fname = 'net';
+    param.opt = 'vpn_info';
+    param.function = type;
+    if (type == 'set') {
+        param.user = user;
+        param.password = pwd;
+    }
+    $.ajaxSettings.async = false;
+    $.post(actionUrl, param, function (data) {
+        if (data.error == 0) {
+            if (type == 'get') {
+                vpnJsonObject = data;
+            }
+        }
+    }, 'json');
+}
+
+function getdhcpdmac() {
+    $.ajaxSettings.async = false;
+    $.get(actionUrl + 'fname=net&opt=dhcpd&function=get', function (data) {
+        if (data.error == 0) {
+            dhcpdmac = data.mac;
+        }
+    }, 'json');
+}
+
+function vpnOnline(status) {
+    var param = {};
+    param.code = '111';
+    param.product = '0001';
+    param.phone = vpnJsonObject.user;
+    param.pass = $.md5(vpnJsonObject.password);
+    param.cid = dhcpdmac.replace(/:/g, '').toUpperCase();
+//    param.routerid = vpnJsonObject.routerid;
+    getVpn(param, status);
+}
+
+function loading(num, content_text, type) {
+    var content;
+    if (type == 1) {
+        content = content_text;
+    } else if (type == 2) {
+        content = content_text;
+    } else {
+        content = '<div class="loading"><p><img src="../images/loading-' + num + '.gif" width="120"></p><p>' + content_text + '</p></div>';
+    }
+    layer.open({
+        type: 1,
+        title: false,
+        shade: [0.7, '#000'],
+        closeBtn: false,
+        shadeClose: false,
+        content: content,
+        skin: 'cy-class'
+    });
 }

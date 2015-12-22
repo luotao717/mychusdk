@@ -619,6 +619,7 @@ function showStatic() {
 
 function toUrl() {
     document.location = 'http://' + document.domain + "/user/index.html?tt=" + new Date().getTime();
+
 }
 
 function toSucssUrl() {
@@ -909,6 +910,7 @@ var router = {
             success: function (data) {
                 var jsonObject = data;
                 if (jsonObject.error == 0) {
+                    $("#firmware_model").text(jsonObject.model);
                     $("#version").html(jsonObject.localfirm_version);
                 } else {
                     $("#version").html(getErrorCode(data.error));
@@ -1427,9 +1429,6 @@ function locationUrl(error) {
         getMsg(getErrorCode(error));
     }
 }
-
-
-
 
 //获取Router Info
 function init() {

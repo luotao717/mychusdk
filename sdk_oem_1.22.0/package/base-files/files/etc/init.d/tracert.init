@@ -4,13 +4,13 @@
 SERVICE_USE_PID=1
 
 START=51
-
+kver=`ls /lib/modules`
 start() {
-	insmod tracert
+	insmod /lib/modules/${kver}/tracert.ko
 }
 
 stop() {
-	rmmod tracert
+	rmmod /lib/modules/${kver}/tracert.ko
 }
 
 

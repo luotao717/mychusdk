@@ -644,6 +644,7 @@ function locationUrl(error) {
     if (error == 10007) {
         getMobileMsg('请重新登录！');
         setTimeout(function () {
+            var mob = getMobile();
             if (mob == 1) {
                 $.cookie('lstatus', false, {path: '/m'});
             } else {

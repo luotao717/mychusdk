@@ -63,6 +63,8 @@
 
 static const char rcsid[] = RCSID;
 
+extern volatile int status;;
+
 /* global vars */
 ipcp_options ipcp_wantoptions[NUM_PPP];	/* Options that we want to request */
 ipcp_options ipcp_gotoptions[NUM_PPP];	/* Options that peer ack'd */
@@ -1934,18 +1936,22 @@ ipcp_up(f)
 	    notice("primary   DNS address %I", go->dnsaddr[0]);
 	if (go->dnsaddr[1])
 	    notice("secondary DNS address %I", go->dnsaddr[1]);
-	if (pppd_type == PPPD_TYPE_PPPOE_CLIENT) {
-	        memset(&pppd, 0, sizeof(pppd));
-	        arr_strcpy(pppd.devname, ifname);
-	        pppd.ip.s_addr = go->ouraddr;
-	        pppd.mask.s_addr = 0xFFFFFFFF;
-	        pppd.gw.s_addr = ho->hisaddr;
-               pppd.dns[0].s_addr = go->dnsaddr[0];
-               pppd.dns[1].s_addr = go->dnsaddr[1];
-	        pppd.pppd_type = pppd_type;
-	        pppd.type = IF_TYPE_WAN;
-	        pppd.uid = 1;
-	        mu_msg(IF_MOD_IFACE_IP_UP, &pppd, sizeof(pppd), NULL, 0);
+	if (pppd_type == PPPD_TYPE_PPPOE_CLIENT
+		|| pppd_type == PPPD_TYPE_PPTP_CLIENT) {
+		memset(&pppd, 0, sizeof(pppd));
+		arr_strcpy(pppd.devname, ifname);
+		pppd.ip.s_addr = go->ouraddr;
+		pppd.mask.s_addr = 0xFFFFFFFF;
+		pppd.gw.s_addr = ho->hisaddr;
+		pppd.dns[0].s_addr = go->dnsaddr[0];
+		pppd.dns[1].s_addr = go->dnsaddr[1];
+		pppd.pppd_type = pppd_type;
+		pppd.type = IF_TYPE_WAN;
+		pppd.uid = 1;
+		if (pppd_type == PPPD_TYPE_PPPOE_CLIENT)
+			mu_msg(IF_MOD_IFACE_IP_UP, &pppd, sizeof(pppd), NULL, 0);
+		else if (pppd_type == PPPD_TYPE_PPTP_CLIENT)
+			mu_msg(VPN_MOD_PPPD_IPUP, &pppd, sizeof(pppd), NULL, 0);
 	}
     }
 
@@ -1982,14 +1988,19 @@ ipcp_down(f)
     struct sys_msg_ipcp pppd;
 	
     IPCPDEBUG(("ipcp: down"));
-    if (pppd_type == PPPD_TYPE_PPPOE_CLIENT) {
-	    memset(&pppd, 0, sizeof(pppd));
-	    arr_strcpy(pppd.devname, devnam);
-	    pppd.pppd_type = pppd_type;
-	    pppd.uid = 1;
-	    pppd.type = IF_TYPE_WAN;
-	   mu_msg(IF_MOD_IFACE_IP_DOWN, &pppd, sizeof(pppd), NULL, 0);
-    }
+	if ((pppd_type == PPPD_TYPE_PPPOE_CLIENT
+		|| pppd_type == PPPD_TYPE_PPTP_CLIENT)
+		&& status != EXIT_USER_REQUEST) {
+		memset(&pppd, 0, sizeof(pppd));
+		arr_strcpy(pppd.devname, devnam);
+		pppd.pppd_type = pppd_type;
+		pppd.uid = 1;
+		pppd.type = IF_TYPE_WAN;
+		if (pppd_type == PPPD_TYPE_PPPOE_CLIENT)
+			mu_msg(IF_MOD_IFACE_IP_DOWN, &pppd, sizeof(pppd), NULL, 0);
+		else if (pppd_type == PPPD_TYPE_PPTP_CLIENT)
+			mu_msg(VPN_MOD_PPPD_IPDOWN, &pppd, sizeof(pppd), NULL, 0);	
+	}
     /* XXX a bit IPv4-centric here, we only need to get the stats
      * before the interface is marked down. */
     /* XXX more correct: we must get the stats before running the notifiers,

@@ -3,10 +3,9 @@
 
 #define URLSAFE_CONFIG_FILE "qos_rule"
 
-#define URL_SAFE_DATA_MX IGD_URL_HOST_LEN * 4096
+#define URL_SAFE_DATA_MX IGD_DNS_LEN * 4096
 #define URL_SAFE_KO "url.ko"
 #define URL_SERVER_PORT 8621
-#define URL_WLIST_PER_MX 128
 #define URL_SERVER_DOMAIN "secure.wiair.com"
 #define URL_SAFE_WHITE_LIST "/tmp/rconf/white.txt"
 
@@ -25,12 +24,12 @@ struct urlsafe_conf {
 	unsigned int devid;
 	struct in_addr local;
 	struct in_addr remote[DNS_IP_MX];
-	char rd_url[IGD_URL_HOST_LEN];
+	char rd_url[IGD_DNS_LEN];
 };
 
 struct urlsafe_trust {
 	struct in_addr ip;
-	unsigned char url[IGD_URL_HOST_LEN];
+	unsigned char url[IGD_DNS_LEN];
 };
 
 extern int urlsafe_call(MSG_ID msgid, void *data, int len, void *rbuf, int rlen);

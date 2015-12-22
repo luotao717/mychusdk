@@ -10,12 +10,14 @@
 #include "igd_wifi.h"
 #include "igd_dnsmasq.h"
 #include "igd_qos.h"
+#include "igd_ali.h"
 #include "igd_system.h"
 #include "igd_url_safe.h"
 #include "igd_upnp.h"
 #include "igd_nat.h"
 #include "igd_cloud.h"
 #include "igd_advert.h"
+#include "igd_vpn.h"
 #include "uci_fn.h"
 #include "igd_md5.h"
 #include <sys/socket.h>
@@ -23,7 +25,7 @@
 #include <arpa/inet.h>
 #include "image.h"
 
-#if 0
+#if 1
 #define CGI_PRINTF(fmt,args...) do{}while(0)
 #else
 #define CGI_PRINTF(fmt,args...) do{console_printf("[CGI:%05d]DBG:"fmt, __LINE__, ##args);}while(0)
@@ -97,46 +99,21 @@ int cgi_str2mac(char *str, unsigned char *mac)
 	return 0;
 }
 
-int calc_uptime(struct uptime_record_info *t, int *ontime)
-{
-	time_t now_time;
-	long sys_time = sys_uptime();
-	long uptime;
-
-	time(&now_time);
-	if (!t->time) {
-		*ontime = 0;
-		CGI_PRINTF("uptime time(%d) err\n", t->time);
-		return 0;
-	} else if (t->flag == UPTIME_NET) {
-		*ontime = now_time - t->time;
-		return t->time;
-	} else if (t->flag == UPTIME_SYS) {
-		uptime = now_time - sys_time + t->time;
-		*ontime = sys_time - t->time;
-		return uptime >= 0 ? uptime : 0;
-	} else {
-		*ontime = 0;
-		CGI_PRINTF("uptime flag(%d) err\n", t->flag);
-		return 0;
-	}
-}
-
 struct json_object *get_app_json(struct host_app_dump_info *app)
 {
-	int time = 0, i = 0, ontime = 0;
+	int i = 0;
 	struct json_object *obj, *papp;
 	char app_flag[HARF_MAX + 1] = {0,};
 
 	papp = json_object_new_object();
 	
-	obj = json_object_new_int(app->appid);
+	obj = json_object_new_int((int)app->appid);
 	json_object_object_add(papp, "id", obj);
 	
-	obj = json_object_new_int(app->down_speed/1024);
+	obj = json_object_new_int((int)(app->down_speed/1024));
 	json_object_object_add(papp, "speed", obj);
 
-	obj = json_object_new_int(app->up_speed/1024);
+	obj = json_object_new_int((int)(app->up_speed/1024));
 	json_object_object_add(papp, "up_speed", obj);
 
 	obj = json_object_new_uint64(app->up_bytes/1024);
@@ -145,13 +122,10 @@ struct json_object *get_app_json(struct host_app_dump_info *app)
 	obj = json_object_new_uint64(app->down_bytes/1024);
 	json_object_object_add(papp, "down_bytes", obj);
 
-	time = calc_uptime(&app->uptime, &ontime);
-	obj = json_object_new_int(time);
+	obj = json_object_new_int((int)app->uptime);
 	json_object_object_add(papp, "uptime", obj);
 
-	if (!igd_test_bit(HARF_ONLINE, app->flag))
-		ontime = 0;
-	obj = json_object_new_int(ontime);
+	obj = json_object_new_int((int)app->ontime);
 	json_object_object_add(papp, "ontime", obj);
 
 	memset(app_flag, 0, sizeof(app_flag));
@@ -168,7 +142,7 @@ struct json_object *get_app_json(struct host_app_dump_info *app)
 struct json_object *get_host_json(struct host_dump_info *host, char *callip)
 {
 	unsigned long speed;
-	int time = 0, i = 0, ontime = 0;
+	int i = 0;
 	struct json_object *obj, *phost;
 	char host_flag[HIRF_MAX + 3] = {0,}, *ptr = NULL;
 
@@ -200,25 +174,22 @@ struct json_object *get_host_json(struct host_dump_info *host, char *callip)
 	obj= json_object_new_string(host->name);
 	json_object_object_add(phost, "name", obj);
 
-	obj = json_object_new_int(host->vender);
+	obj = json_object_new_int((int)host->vender);
 	json_object_object_add(phost, "vendor", obj);
 
-	obj = json_object_new_int(host->os_type);
+	obj = json_object_new_int((int)host->os_type);
 	json_object_object_add(phost, "ostype", obj);
 
-	time = (int)calc_uptime(&host->uptime, &ontime);
-	obj = json_object_new_int(time);
+	obj = json_object_new_int((int)host->uptime);
 	json_object_object_add(phost, "uptime", obj);
 
-	if (!igd_test_bit(HIRF_ONLINE, host->flag))
-		ontime = 0;
-	obj = json_object_new_int(ontime);
+	obj = json_object_new_int((int)host->ontime);
 	json_object_object_add(phost, "ontime", obj);
 
-	obj = json_object_new_int(host->mode);
+	obj = json_object_new_int((int)host->mode);
 	json_object_object_add(phost, "mode", obj);
 
-	obj = json_object_new_int(host->pic);
+	obj = json_object_new_int((int)host->pic);
 	json_object_object_add(phost, "pic", obj);
 
 	memset(host_flag, 0, sizeof(host_flag));
@@ -460,7 +431,7 @@ enum HOST_IF_TYPE {
 int cgi_net_host_if_handler(server_t *srv, connection_t *con, struct json_object *response)
 {
 	unsigned long speed;
-	int host_nr, i, j, time, ontime;
+	int host_nr, i, j;
 	char if_data[HIT_MAX], host_flag[HIRF_MAX + 3] = {0,}, *pif_data, *ptr;
 	struct json_object *phost, *obj, *ts;
 	struct host_dump_info *host, hdi[HOST_MX];
@@ -548,15 +519,9 @@ int cgi_net_host_if_handler(server_t *srv, connection_t *con, struct json_object
 			json_object_object_add(phost, "down_bytes", obj);
 		}
 		if (if_data[HIT_TIME]) {
-			time = (int)calc_uptime(&host->uptime, &ontime);
-			obj = json_object_new_int(time);
+			obj = json_object_new_int((int)host->uptime);
 			json_object_object_add(phost, "uptime", obj);
-			
-			if (igd_test_bit(HIRF_ONLINE, host->flag)) {
-				obj = json_object_new_int(ontime);
-			} else {
-				obj = json_object_new_int(0);
-			}
+			obj = json_object_new_int((int)host->ontime);
 			json_object_object_add(phost, "ontime", obj);
 		}
 		if (if_data[HIT_LS]) {
@@ -1795,7 +1760,20 @@ int cgi_up_ready_handler(server_t *srv, connection_t *con, struct json_object *r
 {
 	CHECK_LOGIN;
 
+#ifdef FLASH_4_RAM_32
+	system("up_ready.sh");
+#endif
 	return 0;
+}
+
+int pro_reset_first_login_handler(server_t *srv, connection_t *con, struct json_object *response)
+{
+
+#ifdef ALI_REQUIRE_SWITCH
+	if (mu_msg(ALI_MOD_GET_RESET, NULL, 0, NULL, 0))
+		return 0;
+#endif
+	return CGI_ERR_FAIL;
 }
 
 /*interface module cgi*/
@@ -1815,6 +1793,11 @@ int pro_net_wan_set_handler(server_t* srv, connection_t *con, struct json_object
 	char *channel_s = NULL, *ssid_s = NULL, *security_s = NULL, *key_s = NULL;
 	
 	if(connection_is_set(con)) {
+#ifdef ALI_REQUIRE_SWITCH
+		int ali_flag = 0;
+		if (mu_msg(ALI_MOD_GET_RESET, NULL, 0, NULL, 0))
+			mu_msg(ALI_MOD_GET_RESET, &ali_flag, sizeof(ali_flag), NULL, 0);
+#endif
 		status = uci_getval("qos_rule", "status", "status");
 		if (NULL == status)
 			return CGI_ERR_FAIL;
@@ -2171,8 +2154,6 @@ int pro_net_wan_set_handler(server_t* srv, connection_t *con, struct json_object
 	}
 }
 
-
-
 int pro_net_wan_info_handler(server_t* srv, connection_t *con, struct json_object*response)
 {
 	int uid = 1;
@@ -2253,6 +2234,7 @@ int pro_net_wan_detect_handler(server_t* srv, connection_t *con, struct json_obj
 /*wifi module cgi*/
 int pro_net_wifi_ap_handler(server_t* srv, connection_t *con, struct json_object*response)
 {
+	int ac = 0;
 	struct wifi_conf config;
 	struct json_object* obj;
 	char *ssid = NULL, *passwd = NULL;
@@ -2295,18 +2277,108 @@ int pro_net_wifi_ap_handler(server_t* srv, connection_t *con, struct json_object
 			arr_strcpy(config.key, passwd);
 		}
 
+		if (mu_msg(WIFI_MOD_SET_AP, &config, sizeof(config), NULL, 0))
+			return CGI_ERR_FAIL;
+
 		memset(&nlk, 0x0, sizeof(nlk));
 		nlk.comm.gid = NLKMSG_GRP_SYS;
 		nlk.comm.mid = SYS_GRP_MID_WIFI;
 		nlk.msg.wifi.type = 2;
 		nlk_event_send(NLKMSG_GRP_SYS, &nlk, sizeof(nlk));
+		return 0;
+	}
 
+	if (!mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &config, sizeof(config)))
+		ac = 1;
+	if (mu_msg(WIFI_MOD_GET_CONF, NULL, 0, &config, sizeof(config)))
+		return CGI_ERR_FAIL;
+	obj = json_object_new_int(ac);
+	json_object_object_add(response, "5G", obj);
+	obj = json_object_new_string(config.ssid);
+	json_object_object_add(response, "ssid", obj);
+	obj = json_object_new_int(config.hidssid);
+	json_object_object_add(response, "hidden", obj);
+	obj = json_object_new_int(config.channel);
+	json_object_object_add(response, "channel", obj);
+	obj = json_object_new_int(config.htbw);
+	json_object_object_add(response, "bw", obj);
+	if (!strncmp(config.encryption, "none", 4)) {
+		obj= json_object_new_int(0);
+		json_object_object_add(response, "security", obj);
+		obj= json_object_new_string("");
+		json_object_object_add(response, "passwd", obj);
+		return 0; 
+	}
+	
+	if (con->login == 1) {
+		obj= json_object_new_int(1);
+		json_object_object_add(response, "security", obj);
+		obj= json_object_new_string(config.key);
+		json_object_object_add(response, "passwd", obj);
+	} else {
+		obj= json_object_new_int(0);
+		json_object_object_add(response, "security", obj);
+		obj= json_object_new_string("");
+		json_object_object_add(response, "passwd", obj);
+	}
+	return 0;
+}
+
+int pro_net_wifi_ap_5g_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	struct wifi_conf config;
+	struct json_object* obj;
+	char *ssid = NULL, *passwd = NULL;
+	char *channel = NULL, *hidden = NULL, *bw = NULL;
+	
+	if (connection_is_set(con)) {
+		CHECK_LOGIN;
+		ssid = con_value_get(con, "ssid");
+		passwd = con_value_get(con, "passwd");
+		channel = con_value_get(con, "channel");
+		hidden = con_value_get(con, "hidden");
+		bw = con_value_get(con, "bw");
+		if (NULL == ssid ||(strlen(ssid) <= 0) || (strlen(ssid) > 31))
+			return CGI_ERR_INPUT;
+		memset(&config, 0x0, sizeof(config));
+		if (mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &config, sizeof(config)))
+			return CGI_ERR_FAIL;
+		if (channel) {
+			config.channel = atoi(channel);
+			switch(config.channel) {
+			case 0:
+			case 149:
+			case 153:
+			case 157:
+			case 161:
+				break;
+			default:
+				return CGI_ERR_INPUT;
+			}
+		}
+		if (hidden) {
+			config.hidssid = atoi(hidden);
+			if (config.hidssid != 0 && config.hidssid != 1)
+				return CGI_ERR_INPUT;
+		}
+		if (bw) {
+			config.htbw = atoi(bw);
+			if (config.htbw != 0 && config.htbw != 1)
+				return CGI_ERR_INPUT;
+		}
+		arr_strcpy(config.ssid, ssid);
+		if (passwd == NULL ||!strlen(passwd))
+			arr_strcpy(config.encryption, "none");
+		else {
+			arr_strcpy(config.encryption, "psk2+ccmp");
+			arr_strcpy(config.key, passwd);
+		}
 		if (mu_msg(WIFI_MOD_SET_AP, &config, sizeof(config), NULL, 0))
 			return CGI_ERR_FAIL;
 		return 0;
 	}
 
-	if (mu_msg(WIFI_MOD_GET_CONF, NULL, 0, &config, sizeof(config)))
+	if (mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &config, sizeof(config)))
 		return CGI_ERR_FAIL;
 	obj = json_object_new_string(config.ssid);
 	json_object_object_add(response, "ssid", obj);
@@ -2429,6 +2501,97 @@ int pro_net_wifi_lt_handler(server_t *srv, connection_t *con, struct json_object
 	return 0;
 }
 
+int pro_net_wifi_lt_5g_handler(server_t *srv, connection_t *con, struct json_object *response)
+{
+	char *ptr = NULL;
+	unsigned char i = 0;
+	int start, end, now;
+	struct tm *tm = get_tm();
+	struct wifi_conf config;
+	struct time_comm *t = &config.tm;
+	struct json_object* obj, *week, *day;
+	
+	memset(&config, 0, sizeof(config));
+	if (connection_is_set(con)) {
+		CHECK_LOGIN;
+		if (mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &config, sizeof(config)))
+			return CGI_ERR_FAIL;
+		memset(&config.tm, 0x0, sizeof(config.tm));
+		ptr = con_value_get(con, "enable");
+		if (!ptr) {
+			CGI_PRINTF("input err, %p\n", ptr);
+			return CGI_ERR_INPUT;
+		}
+		config.enable = atoi(ptr);
+		ptr = con_value_get(con, "time_on");
+		if (!ptr) {
+			CGI_PRINTF("input err, %p\n", ptr);
+			return CGI_ERR_INPUT;
+		}
+		config.time_on = atoi(ptr);
+		ptr = con_value_get(con, "week");
+		if (!ptr) {
+			CGI_PRINTF("input err, %p\n", ptr);
+			return CGI_ERR_INPUT;
+		}
+		for (i = 0; i < 7; i++) {
+			if (*(ptr + i) == '\0') {
+				CGI_PRINTF("week err\n");
+				break;
+			}
+			if (*(ptr + i) == '1')
+				CGI_BIT_SET(t->day_flags, i);
+		}
+		CON_GET_CHECK_INT(ptr, con, t->start_hour, "sh", 23);
+		CON_GET_CHECK_INT(ptr, con, t->start_min, "sm", 59);
+		CON_GET_CHECK_INT(ptr, con, t->end_hour, "eh", 23);
+		CON_GET_CHECK_INT(ptr, con, t->end_min, "em", 59);
+		if (!t->day_flags && tm && config.time_on) {
+			start = t->start_hour*60 + t->start_min;
+			end = t->end_hour*60 + t->end_min;
+			now = tm->tm_hour*60 + tm->tm_min;
+			if ((start < end) && (now > end))
+				return CGI_ERR_TIMEOUT;
+		}
+		if (t->day_flags)
+			t->loop = 1;
+		else
+			CGI_BIT_SET(t->day_flags, tm->tm_wday);
+		if (mu_msg(WIFI_MOD_SET_TIME, &config, sizeof(config), NULL, 0))
+			return CGI_ERR_FAIL;
+		return 0;
+	}
+
+	if (mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &config, sizeof(config)))
+		return CGI_ERR_FAIL;
+	obj = json_object_new_int(config.enable);
+	json_object_object_add(response, "enable", obj);
+	obj = json_object_new_int(config.time_on);
+	json_object_object_add(response, "time_on", obj);
+	week = json_object_new_array();
+	if (t->loop) {
+		for (i = 0; i < 7; i++) {
+			if (!CGI_BIT_TEST(t->day_flags, i))
+				continue;
+			day = json_object_new_int(i);
+			json_object_array_add(week, day);
+		}
+	}
+	json_object_object_add(response, "week", week);
+	obj = json_object_new_int(t->start_hour);
+	json_object_object_add(response, "sh", obj);
+
+	obj = json_object_new_int(t->start_min);
+	json_object_object_add(response, "sm", obj);
+
+	obj = json_object_new_int(t->end_hour);
+	json_object_object_add(response, "eh", obj);
+
+	obj = json_object_new_int(t->end_min);
+	json_object_object_add(response, "em", obj);
+	return 0;
+}
+
 int pro_net_wifi_vap_handler(server_t* srv, connection_t *con, struct json_object*response)
 {
 	int enable = 0;
@@ -2463,13 +2626,47 @@ int pro_net_wifi_vap_handler(server_t* srv, connection_t *con, struct json_objec
 	return 0;
 }
 
+int pro_net_wifi_vap_5g_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int enable = 0;
+	char *vssid_s = NULL;
+	char *enable_s = NULL;
+	struct wifi_conf config;
+	struct json_object* obj;
+
+	memset(&config, 0x0, sizeof(config));
+	if (connection_is_set(con)) {
+		CHECK_LOGIN;
+		enable_s = con_value_get(con, "enable");
+		vssid_s = con_value_get(con, "vssid");
+		if (enable_s == NULL)
+			return CGI_ERR_INPUT; 
+		if (mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &config, sizeof(config)))
+			return CGI_ERR_FAIL;
+		enable = atoi(enable_s);
+		config.vap = enable;
+		if (vssid_s)
+			arr_strcpy(config.vssid, vssid_s);
+		if (mu_msg(WIFI_MOD_SET_VAP, &config, sizeof(config), NULL, 0))
+			return CGI_ERR_FAIL;
+		return 0;
+	}
+	if (mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &config, sizeof(config)))
+		return CGI_ERR_FAIL;
+	obj = json_object_new_int(config.vap);
+	json_object_object_add(response, "enable", obj);
+	obj = json_object_new_string(config.vssid);
+	json_object_object_add(response, "vssid", obj);
+	return 0;
+}
+
 int pro_net_wifi_vap_host_hander(server_t* srv, connection_t *con, struct json_object*response)
 {
 	int i = 0, nr = 0;
 	char *mac_s = NULL;
 	char *action_s = NULL;
 	char macstr[18];
-	unsigned char mac[ETH_ALEN];
+	struct iwguest ghost;
 	struct host_info info[HOST_MX];
 	struct json_object *obj, *vhosts, *host;
 	
@@ -2479,12 +2676,13 @@ int pro_net_wifi_vap_host_hander(server_t* srv, connection_t *con, struct json_o
 		action_s = con_value_get(con, "action");
 		if (!action_s || !mac_s || checkmac(mac_s))
 			return CGI_ERR_INPUT;
-		parse_mac(mac_s, mac);
+		ghost.gid = UGRP_AP_2;
+		parse_mac(mac_s, ghost.mac);
 		if (!strncmp(action_s, "add", 3)) {
-			if (mu_msg(WIFI_MOD_VAP_HOST_ADD, mac, sizeof(mac), NULL, 0))
+			if (mu_msg(WIFI_MOD_VAP_HOST_ADD, &ghost, sizeof(ghost), NULL, 0))
 				return CGI_ERR_FAIL;
 		} else if (!strncmp(action_s, "del", 3)) {
-			if (mu_msg(WIFI_MOD_VAP_HOST_DEL, mac, sizeof(mac), NULL, 0))
+			if (mu_msg(WIFI_MOD_VAP_HOST_DEL, &ghost, sizeof(ghost), NULL, 0))
 				return CGI_ERR_FAIL;
 		} else
 			return CGI_ERR_INPUT;
@@ -2498,6 +2696,8 @@ int pro_net_wifi_vap_host_hander(server_t* srv, connection_t *con, struct json_o
 	json_object_object_add(response, "count", obj);
 	vhosts = json_object_new_array();
 	for (i = 0; i < nr; i++) {
+		if (info[i].pid != 2)
+			continue;
 		host = json_object_new_object();
 		obj = json_object_new_int(info[i].vender);
 		json_object_object_add(host, "vender", obj);
@@ -2513,9 +2713,76 @@ int pro_net_wifi_vap_host_hander(server_t* srv, connection_t *con, struct json_o
 		snprintf(macstr, 18, "%02x:%02x:%02x:%02x:%02x:%02x", MAC_SPLIT(info[i].mac));
 		obj = json_object_new_string(macstr);
 		json_object_object_add(host, "mac", obj);
-		obj = json_object_new_int(info[i].pid);
+		obj = json_object_new_int(info[i].is_wifi);
 		json_object_object_add(host, "wlist", obj);
+		obj = json_object_new_int(info[i].pid);
+		json_object_object_add(host, "pid", obj);
 		json_object_array_add(vhosts, host);
+		
+	}
+	json_object_object_add(response, "guests", vhosts);
+	return 0;
+}
+
+int pro_net_wifi_vap_host_5g_hander(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int i = 0, nr = 0;
+	char *mac_s = NULL;
+	char *action_s = NULL;
+	char macstr[18];
+	struct iwguest ghost;
+	struct host_info info[HOST_MX];
+	struct json_object *obj, *vhosts, *host;
+	
+	if (connection_is_set(con)) {
+		CHECK_LOGIN;
+		mac_s = con_value_get(con, "mac");
+		action_s = con_value_get(con, "action");
+		if (!action_s || !mac_s || checkmac(mac_s))
+			return CGI_ERR_INPUT;
+		ghost.gid = UGRP_5G_AP_2;
+		parse_mac(mac_s, ghost.mac);
+		if (!strncmp(action_s, "add", 3)) {
+			if (mu_msg(WIFI_MOD_VAP_HOST_ADD, &ghost, sizeof(ghost), NULL, 0))
+				return CGI_ERR_FAIL;
+		} else if (!strncmp(action_s, "del", 3)) {
+			if (mu_msg(WIFI_MOD_VAP_HOST_DEL, &ghost, sizeof(ghost), NULL, 0))
+				return CGI_ERR_FAIL;
+		} else
+			return CGI_ERR_INPUT;
+		return 0;
+	}
+	memset(&info, 0x0, sizeof(info));
+	nr = mu_msg(WIFI_MOD_VAP_HOST_DUMP, NULL, 0, info, sizeof(struct host_info) * HOST_MX);
+	if (nr < 0)
+		return CGI_ERR_FAIL;
+	obj = json_object_new_int(nr);
+	json_object_object_add(response, "count", obj);
+	vhosts = json_object_new_array();
+	for (i = 0; i < nr; i++) {
+		if (info[i].pid != WIFI_5G_BASIC_ID + 2)
+			continue;
+		host = json_object_new_object();
+		obj = json_object_new_int(info[i].vender);
+		json_object_object_add(host, "vender", obj);
+		obj = json_object_new_int(info[i].os_type);
+		json_object_object_add(host, "ostype", obj);
+		if (info[i].nick_name[0]) {
+			obj = json_object_new_string(info[i].nick_name);
+			json_object_object_add(host, "name", obj);
+		} else {
+			obj = json_object_new_string(info[i].name);
+			json_object_object_add(host, "name", obj);
+		}
+		snprintf(macstr, 18, "%02x:%02x:%02x:%02x:%02x:%02x", MAC_SPLIT(info[i].mac));
+		obj = json_object_new_string(macstr);
+		json_object_object_add(host, "mac", obj);
+		obj = json_object_new_int(info[i].is_wifi);
+		json_object_object_add(host, "wlist", obj);
+		obj = json_object_new_int(info[i].pid);
+		json_object_object_add(host, "pid", obj);
+		json_object_array_add(vhosts, host);
+		
 	}
 	json_object_object_add(response, "guests", vhosts);
 	return 0;
@@ -2527,14 +2794,15 @@ int pro_net_txrate_handler(server_t* srv, connection_t *con, struct json_object*
 	char *txrates = NULL;
 	struct wifi_conf config;
 	struct json_object* obj;
-	
+
 	if (connection_is_set(con)) {
+		CHECK_LOGIN;
 		txrates = con_value_get(con, "txrate");
 		if (txrates == NULL)
 			return CGI_ERR_INPUT; 
 		txrate = atoi(txrates);
 		if (txrate > 100 || txrate < 10)
-			return CGI_ERR_INPUT; 
+			return CGI_ERR_INPUT;
 		if (mu_msg(WIFI_MOD_SET_TXRATE, &txrate, sizeof(txrate), NULL, 0))
 			return CGI_ERR_FAIL;
 		return 0;
@@ -2545,7 +2813,33 @@ int pro_net_txrate_handler(server_t* srv, connection_t *con, struct json_object*
 	obj = json_object_new_int(config.txrate);
 	json_object_object_add(response, "txrate", obj);
 	return 0;
-	
+}
+
+int pro_net_txrate_5g_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int txrate;
+	char *txrates = NULL;
+	struct wifi_conf config;
+	struct json_object* obj;
+
+	if (connection_is_set(con)) {
+		CHECK_LOGIN;
+		txrates = con_value_get(con, "txrate");
+		if (txrates == NULL)
+			return CGI_ERR_INPUT; 
+		txrate = atoi(txrates);
+		if (txrate > 100 || txrate < 10)
+			return CGI_ERR_INPUT;
+		if (mu_msg(WIFI_MOD_SET_TXRATE_5G, &txrate, sizeof(txrate), NULL, 0))
+			return CGI_ERR_FAIL;
+		return 0;
+	}
+	memset(&config, 0x0, sizeof(config));
+	if (mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &config, sizeof(config)))
+		return CGI_ERR_FAIL;
+	obj = json_object_new_int(config.txrate);
+	json_object_object_add(response, "txrate", obj);
+	return 0;
 }
 
 int pro_net_ap_list_handler(server_t* srv, connection_t *con, struct json_object*response)
@@ -2557,7 +2851,8 @@ int pro_net_ap_list_handler(server_t* srv, connection_t *con, struct json_object
 	struct json_object *aps;
 	struct json_object *ap;
 	struct iwsurvey survey[IW_SUR_MX];
-	
+
+	CHECK_LOGIN;
 	if (connection_is_set(con))
 		return CGI_ERR_FAIL;
 	nr = mu_msg(WIFI_MOD_GET_SURVEY, &scan, sizeof(int), survey, sizeof(struct iwsurvey) * IW_SUR_MX);
@@ -2596,6 +2891,55 @@ finish:
 	return 0;
 }
 
+int pro_net_ap_list_5g_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int i;
+	int nr = 0;
+	int scan = 1;
+	struct json_object *obj;
+	struct json_object *aps;
+	struct json_object *ap;
+	struct iwsurvey survey[IW_SUR_MX];
+
+	CHECK_LOGIN;
+	if (connection_is_set(con))
+		return CGI_ERR_FAIL;
+	nr = mu_msg(WIFI_MOD_GET_SURVEY_5G, &scan, sizeof(int), survey, sizeof(struct iwsurvey) * IW_SUR_MX);
+	if (nr > 0)
+		goto finish;
+	usleep(5000000);
+	scan = 0;
+	nr = mu_msg(WIFI_MOD_GET_SURVEY_5G, &scan, sizeof(int), survey, sizeof(struct iwsurvey) * IW_SUR_MX);
+	if (nr <= 0)
+		return CGI_ERR_FAIL;
+finish:
+	obj = json_object_new_int(nr);
+	json_object_object_add(response, "count", obj);
+	aps = json_object_new_array();
+	for (i = 0; i < nr; i++) {
+		ap = json_object_new_object();
+		obj = json_object_new_int(survey[i].ch);
+		json_object_object_add(ap, "channel", obj);
+		obj = json_object_new_int(survey[i].signal);
+		json_object_object_add(ap, "dbm", obj);
+		obj = json_object_new_string(survey[i].ssid);
+		json_object_object_add(ap, "ssid", obj);
+		obj = json_object_new_string(survey[i].extch);
+		json_object_object_add(ap, "extch", obj);
+		obj = json_object_new_string(survey[i].security);
+		json_object_object_add(ap, "security", obj);
+		obj = json_object_new_string(survey[i].mode);
+		json_object_object_add(ap, "mode", obj);
+		obj = json_object_new_string(survey[i].bssid);
+		json_object_object_add(ap, "bssid", obj);
+		obj = json_object_new_int(survey[i].wps);
+		json_object_object_add(ap, "wps", obj);
+		json_object_array_add(aps,ap);
+	}
+	json_object_object_add(response, "aplist", aps);
+	return 0;
+}
+
 int pro_net_channel_handler(server_t* srv, connection_t *con, struct json_object*response)
 {
 	int ret = 0;
@@ -2604,6 +2948,7 @@ int pro_net_channel_handler(server_t* srv, connection_t *con, struct json_object
 	struct json_object* obj;
 
 	if (connection_is_set(con)) {
+		CHECK_LOGIN;
 		channels  = con_value_get(con, "channel");
 		if (channels == NULL)
 			return CGI_ERR_INPUT; 
@@ -2627,6 +2972,43 @@ int pro_net_channel_handler(server_t* srv, connection_t *con, struct json_object
 	return 0; 
 }
 
+int pro_net_channel_5g_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int ret = 0;
+	int channel = 0;
+	char *channels = NULL;
+	struct json_object* obj;
+
+	if (connection_is_set(con)) {
+		CHECK_LOGIN;
+		channels  = con_value_get(con, "channel");
+		if (channels == NULL)
+			return CGI_ERR_INPUT; 
+		channel = atoi(channels);
+		switch(channel) {
+		case 149:
+		case 153:
+		case 157:
+		case 161:
+			break;
+		default:
+			return CGI_ERR_INPUT;
+		}
+		if (mu_msg(WIFI_MOD_SET_CHANNEL_5G, &channel, sizeof(channel), NULL, 0))
+			return CGI_ERR_FAIL;
+		return 0;
+	}
+	//if wifi disable,return CGI_ERR_NONEXIST
+	ret = mu_msg(WIFI_MOD_GET_CHANNEL_5G, NULL, 0, &channel, sizeof(channel));
+	if (ret > 0)
+		return CGI_ERR_NOSUPPORT;
+	else if (ret < 0)
+		return CGI_ERR_FAIL;
+	obj = json_object_new_int(channel);
+	json_object_object_add(response, "channel", obj);
+	return 0; 
+}
+
 /*dnsmasq/dhcp module cgi*/
 int pro_net_dhcpd_handler(server_t* srv, connection_t *con, struct json_object*response)
 {
@@ -2638,6 +3020,7 @@ int pro_net_dhcpd_handler(server_t* srv, connection_t *con, struct json_object*r
 	char *enable_s = NULL;
 	char *ip_s = NULL, *mask_s = NULL;
 	char *start_s = NULL, *end_s = NULL;
+	char macstr[18];
 	
 	if (connection_is_set(con)) {
 		CHECK_LOGIN;
@@ -2685,6 +3068,9 @@ int pro_net_dhcpd_handler(server_t* srv, connection_t *con, struct json_object*r
 		json_object_object_add(response, "reboot", obj);
 		return 0;
 	}
+	memset(&ifc, 0x0, sizeof(ifc));
+	if (mu_msg(IF_MOD_PARAM_SHOW, &uid, sizeof(uid), &ifc, sizeof(ifc)))
+		return CGI_ERR_FAIL;
 	if (mu_msg(DNSMASQ_DHCP_SHOW, NULL, 0, &config, sizeof(config)))
 		return CGI_ERR_FAIL;
 	obj= json_object_new_int(reboot);
@@ -2699,6 +3085,9 @@ int pro_net_dhcpd_handler(server_t* srv, connection_t *con, struct json_object*r
 	json_object_object_add(response, "mask", obj);
 	obj= json_object_new_int(config.enable);
 	json_object_object_add(response, "enable", obj);
+	snprintf(macstr, sizeof(macstr), "%02X:%02X:%02X:%02X:%02X:%02X", MAC_SPLIT(ifc.isp.mac));
+	obj= json_object_new_string(macstr);
+	json_object_object_add(response, "mac", obj);
 	return 0;
 }
 
@@ -2845,36 +3234,30 @@ int pro_sys_firmup_handler(server_t* srv, connection_t *con, struct json_object*
 static int check_firmare(void)
 {
 	struct image_header iheader;
-	struct image_header dheader;
-	char *dev;
-	int devfd;
 	int len;
 	int imagefd;
 	int ret = -1;
+	char *retstr;
+	char firmname[32];
 
-	dev = read_firmware("FIRMWARE");
-	if (!dev)
+	retstr = read_firmware("VENDOR");
+	if (!retstr)
 		return -1;
-	devfd = open(dev, O_RDONLY);
-	if (devfd < 0)
+	len = snprintf(firmname, sizeof(firmname), "%s_", retstr);
+	retstr = read_firmware("PRODUCT");
+	if (!retstr)
 		return -1;
+	snprintf(&firmname[len], sizeof(firmname) - len, "%s", retstr);
 	imagefd = open(FW_LOCAL_FILE, O_RDONLY);
-	if (imagefd < 0) {
-		close(devfd);
+	if (imagefd < 0)
 		return -1;
-	}
-
 	len = read(imagefd, (void *)&iheader, sizeof(iheader));
 	if (len != sizeof(iheader))
 		goto error;
-	len = read(devfd, (void *)&dheader, sizeof(dheader));
-	if (len != sizeof(dheader))
-		goto error;
-	if (strcmp((char *)iheader.ih_name, (char *)dheader.ih_name))
+	if (strcmp((char *)iheader.ih_name, firmname))
 		goto error;
 	ret = 0;
 error:
-	close(devfd);
 	close(imagefd);
 	return ret;
 }
@@ -3139,3 +3522,53 @@ int cgi_net_advert_handler(server_t* srv, connection_t *con, struct json_object*
 	return 0;
 }
 
+int cgi_net_vpn_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int len = 0;
+	char *retstr;
+	int connect = 0;
+	struct vpn_info info;
+	struct json_object* obj;
+	
+	if (connection_is_set(con)) {
+		CHECK_LOGIN;
+		retstr = con_value_get(con, "user");
+		if (retstr == NULL)
+			return CGI_ERR_INPUT;
+		len = strlen(retstr);
+		if (!len || len >= sizeof(info.user))
+			return CGI_ERR_INPUT;
+		arr_strcpy(info.user, retstr);
+		retstr = con_value_get(con, "password");
+		if (retstr == NULL)
+			return CGI_ERR_INPUT;
+		len = strlen(retstr);
+		if (!len || len >= sizeof(info.password))
+			return CGI_ERR_INPUT;
+		arr_strcpy(info.password, retstr);
+		if (mu_msg(VPN_MOD_PARAM_SET, &info, sizeof(info), NULL, 0))
+			return CGI_ERR_FAIL;
+		return 0;
+	}
+	if (mu_msg(VPN_MOD_STATUS_DUMP, NULL, 0, &info, sizeof(info)))
+		return CGI_ERR_FAIL;
+	if (info.ipcp.ip.s_addr)
+		connect = 1;
+	obj= json_object_new_int(connect);
+	json_object_object_add(response, "connect", obj);
+	obj= json_object_new_string(inet_ntoa(info.ipcp.ip));
+	json_object_object_add(response, "ip", obj);
+	obj= json_object_new_string(inet_ntoa(info.ipcp.mask));
+	json_object_object_add(response, "mask", obj);
+	obj= json_object_new_string(inet_ntoa(info.ipcp.gw));
+	json_object_object_add(response, "gw", obj);
+	obj= json_object_new_string(inet_ntoa(info.ipcp.dns[0]));
+	json_object_object_add(response, "dns", obj);
+	obj= json_object_new_string(inet_ntoa(info.ipcp.dns[1]));
+	json_object_object_add(response, "dns1", obj);
+	obj= json_object_new_string(info.user);
+	json_object_object_add(response, "user", obj);
+	obj= json_object_new_string(info.password);
+	json_object_object_add(response, "password", obj);
+	return 0;
+}

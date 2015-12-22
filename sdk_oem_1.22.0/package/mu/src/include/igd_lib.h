@@ -64,6 +64,7 @@ struct igd_dns {
 extern struct list_head event_head;
 extern module_t MODULE[MODULE_MX];
 extern int mu_call(MSG_ID mgsid, void *data, int len, void *rbuf, int rlen);
+extern int exe_default(void *cmdline);
 extern int exec_cmd(const char * fmt,...);
 extern void init_scheduler (void);
 extern struct timeval *process_schedule(struct timeval *ptv);

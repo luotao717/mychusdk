@@ -196,8 +196,6 @@ define Package/ppp/install
 	$(INSTALL_DATA) ./files/etc/ppp/filter $(1)/etc/ppp/
 	$(INSTALL_DATA) ./files/etc/ppp/options $(1)/etc/ppp/
 	ln -sf /tmp/resolv.conf.ppp $(1)/etc/ppp/resolv.conf
-	$(INSTALL_BIN) ./files/etc/ppp/ppp-up $(1)/etc/ppp/
-	$(INSTALL_BIN) ./files/etc/ppp/ppp-down $(1)/etc/ppp/
 endef
 Package/ppp-multilink/install=$(Package/ppp/install)
 
@@ -261,7 +259,7 @@ $(eval $(call BuildPackage,ppp-mod-pppoa))
 $(eval $(call BuildPackage,ppp-mod-pppoe))
 $(eval $(call BuildPackage,ppp-mod-radius))
 $(eval $(call BuildPackage,ppp-mod-pppol2tp))
-$(eval $(call BuildPackage,ppp-mod-pptp))
+#$(eval $(call BuildPackage,ppp-mod-pptp))
 $(eval $(call BuildPackage,chat))
 $(eval $(call BuildPackage,pppdump))
 $(eval $(call BuildPackage,pppstats))

@@ -5,10 +5,11 @@
 
 struct http_rule_api {
 	struct inet_l3 l3;
-	int mid;
-	int prio;
-	int type;
-	int times;
+	unsigned char extra;
+	unsigned char log;
+	unsigned short mid;
+	unsigned short prio;
+	unsigned short times;
 	union {
 		struct url_rd rd;
 		char data[512];
@@ -18,7 +19,7 @@ struct http_rule_api {
 extern int get_if_statistics(int type, struct if_statistics *stat);
 extern unsigned int get_devid(void);
 extern unsigned int get_usrid(void);
-extern int get_connect_state(void);
+extern int set_usrid(unsigned int usrid);
 extern int del_group(int mid, int id);
 //extern int clean_group(int mid);
 extern struct nlk_dump_rule *dump_group(int mid, int *nr);
@@ -29,7 +30,7 @@ extern int mod_dns_grp(int id, char *name, int nr, char (*dns)[IGD_DNS_LEN]);
 extern int add_url_grp(char *name, int nr, char (*url)[IGD_URL_LEN]);
 extern int add_url_grp2(char *name, int nr, struct inet_url *url);
 extern int add_dns_grp(char *name, int nr, char (*dns)[IGD_DNS_LEN]);
-extern int add_user_grp_by_mac(char *name, int nr, char (*mac)[ETH_ALEN]);
+extern int add_user_grp_by_mac(char *name, int nr, unsigned char (*mac)[ETH_ALEN]);
 extern int add_user_grp_by_ip(char *name, int nr, struct ip_range *ip);
 extern int add_filter_rule(int mid, int prio, struct nf_rule_info *info);
 extern int del_filter_rule(int mid, int id);
@@ -67,9 +68,13 @@ extern int set_gpio_led(int action);
 extern int set_wifi_led(int action);
 extern int set_port_link(int pid, int action);
 extern char *read_firmware(char *key);
+extern int set_host_info(struct in_addr ip, char *nick_name, char *name, unsigned char os_type, uint16_t vender);
 extern unsigned char *dump_url_host(int *nr);
 extern struct http_host_log *dump_http_log(unsigned char *mac, int *nr);
 extern int set_host_url_switch(int act);
 extern int mtd_set_val(char *val);
 extern int mtd_get_val(char *name, char *val, int len);
+extern int set_wps_led(int action);
+extern int register_http_rsp(int type, struct url_rd *rd);
+extern int unregister_http_rsp(int type);
 #endif

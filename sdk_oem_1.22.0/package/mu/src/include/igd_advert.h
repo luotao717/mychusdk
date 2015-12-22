@@ -1,7 +1,8 @@
 #ifndef _IGD_ADVERT_
 #define _IGD_ADVERT_
 
-#define IGD_ADVERT "igd_advert"
+#define ADVERT_LOG_ZIP "/tmp/adlog.gz"
+#define ADVERT_LOG_FILE "/tmp/adlog"
 #define ADVERT_MOD_INIT DEFINE_MSG(MODULE_ADVERT, 0)
 
 enum {
@@ -9,16 +10,32 @@ enum {
 	ADVERT_MOD_ACTION,
 	ADVERT_MOD_DUMP,
 	ADVERT_MOD_UPLOAD_SUCCESS,
+	ADVERT_MOD_SET_DNS,
+	ADVERT_MOD_SET_SERVER,
+	ADVERT_MOD_LOG_DUMP,
+};
+
+enum {
+	ADVERT_TYPE_JS = 1,
+	ADVERT_TYPE_404,
+	ADVERT_TYPE_RST,
+	ADVERT_TYPE_302,
+	ADVERT_TYPE_TN,
 };
 
 struct advert_rule {
-	int nr;
-	int gid;
-	int rid;
+	unsigned char type;
+	unsigned char rid;
+	unsigned char pro;/*1-100*/
+	unsigned char time_on;
+	unsigned short hgid;/*host grp*/
+	unsigned short ugid;/*url grp*/
+	unsigned short hfre;/*times/hour*/
+	unsigned short dfre;/*times/day*/
+	struct time_comm tm;
 	struct list_head list;
 	struct inet_host host;
 	struct http_rule_api args;
-	char url[IGD_URL_GRP_PER_MX][IGD_URL_LEN];
 };
 
 #define ADVERT_CONFIG "qos_rule"

@@ -7,9 +7,13 @@
 #define PRO_NET_WAN_INFO   "wan_info"
 #define PRO_NET_WAN_ACCOUNT   "wan_account"
 #define PRO_NET_WIFI_AP   "wifi_ap"
+#define PRO_NET_WIFI_AP_5G   "wifi_ap_5g"
 #define PRO_NET_WIFI_LT "wifi_lt"
+#define PRO_NET_WIFI_LT_5G "wifi_lt_5g"
 #define PRO_NET_WIFI_VAP "wifi_vap"
-#define PRO_NET_WIFI_VAP_HOST "vap_host" 
+#define PRO_NET_WIFI_VAP_5G "wifi_vap_5g"
+#define PRO_NET_WIFI_VAP_HOST "vap_host"
+#define PRO_NET_WIFI_VAP_HOST_5G "vap_host_5g"
 #define PRO_NET_DHCPD   "dhcpd"
 #define PRO_SYS_FIRMSTATUS   "firmstatus"
 #define PRO_SYS_FIRMUP   "firmup"
@@ -24,9 +28,13 @@
 #define PRO_NET_QOS   "qos"
 #define PRO_NET_TESTSPEED   "testspeed"
 #define PRO_NET_CHANNEL   "channel"
+#define PRO_NET_CHANNEL_5G   "channel_5g"
 #define PRO_NET_AP_LIST   "ap_list"
+#define PRO_NET_AP_LIST_5G   "ap_list_5g"
 #define PRO_NET_TXRATE    "txrate"
+#define PRO_NET_TXRATE_5G   "txrate_5g"
 #define PRO_NET_ADVERT    "advert"
+#define PRO_RESET_FIRST_LOGIN    "check_first"
 
 #define PRO_SYS_MAIN  "main"
 #define PRO_NET_HOST_APP  "host_app"
@@ -60,10 +68,12 @@
 #define PRO_NET_HOST_LT   "host_lt"
 #define PRO_NET_APP_WRITE   "app_white"
 #define PRO_NET_APP_QUEUE   "app_queue"
+#define PRO_NET_VPN_INFO  "vpn_info"
 #define PRO_SYS_MTD_PARAM "mtd_param"
 #define PRO_SYS_UP_READY  "up_ready"
 
 extern int pro_net_ap_list_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int pro_net_ap_list_5g_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_wan_set_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_wan_account_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_wan_account_active_handler(server_t* srv, connection_t *con, struct json_object*response);
@@ -71,9 +81,13 @@ extern int pro_net_rule_table_security_handler(server_t* srv, connection_t *con,
 extern int pro_net_wan_info_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_sys_setting_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_wifi_ap_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int pro_net_wifi_ap_5g_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_wifi_vap_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int pro_net_wifi_vap_5g_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_wifi_vap_host_hander(server_t* srv, connection_t *con, struct json_object*response);
+extern int pro_net_wifi_vap_host_5g_hander(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_wifi_lt_handler(server_t *srv, connection_t *con, struct json_object *response);
+extern int pro_net_wifi_lt_5g_handler(server_t *srv, connection_t *con, struct json_object *response);
 extern int pro_net_dhcpd_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_sys_firmstatus_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_sys_firmup_handler(server_t* srv, connection_t *con, struct json_object*response);
@@ -87,7 +101,10 @@ extern int pro_net_wan_detect_handler(server_t* srv, connection_t *con, struct j
 extern int pro_net_qos_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_testspeed_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_channel_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int pro_net_channel_5g_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_txrate_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int pro_net_txrate_5g_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int pro_reset_first_login_handler(server_t* srv, connection_t *con, struct json_object*response);
 
 extern int cgi_sys_main_handler(server_t *srv, connection_t *con, struct json_object *response);
 extern int cgi_net_host_app_handler(server_t *srv, connection_t *con, struct json_object *response);
@@ -120,6 +137,7 @@ extern int cgi_net_intercept_url_black_handler(server_t *srv, connection_t *con,
 extern int cgi_net_advert_handler(server_t *srv, connection_t *con, struct json_object *response);
 extern int cgi_net_abandon_handler(server_t *srv, connection_t *con, struct json_object *response);
 extern int cgi_net_app_queue_handler(server_t *srv, connection_t *con, struct json_object *response);
+extern int cgi_net_vpn_handler(server_t *srv, connection_t *con, struct json_object *response);
 extern int cgi_mtd_param_handler(server_t *srv, connection_t *con, struct json_object *response);
 extern int cgi_up_ready_handler(server_t *srv, connection_t *con, struct json_object *response);
 
@@ -160,21 +178,30 @@ static cgi_protocol_t pro_list[] ={
 	{PRO_SYS_UP_READY, cgi_up_ready_handler},
 
 	{PRO_NET_TXRATE, pro_net_txrate_handler},
+	{PRO_NET_TXRATE_5G, pro_net_txrate_5g_handler},
 	{PRO_NET_AP_LIST, pro_net_ap_list_handler},
+	{PRO_NET_AP_LIST_5G, pro_net_ap_list_5g_handler},
 	{PRO_NET_CHANNEL, pro_net_channel_handler},
+	{PRO_NET_CHANNEL_5G, pro_net_channel_5g_handler},
 	{PRO_SYS_WAN_DETECT, pro_net_wan_detect_handler},
 	{PRO_NET_WAN_CONF, pro_net_wan_set_handler},
 	{PRO_NET_WAN_INFO, pro_net_wan_info_handler},
 	{PRO_NET_WAN_ACCOUNT, pro_net_wan_account_handler},
 	{PRO_NET_WIFI_AP, pro_net_wifi_ap_handler},
+	{PRO_NET_WIFI_AP_5G, pro_net_wifi_ap_5g_handler},
 	{PRO_NET_WIFI_LT, pro_net_wifi_lt_handler},
+	{PRO_NET_WIFI_LT_5G, pro_net_wifi_lt_5g_handler},
 	{PRO_NET_WIFI_VAP, pro_net_wifi_vap_handler},
+	{PRO_NET_WIFI_VAP_5G, pro_net_wifi_vap_5g_handler},
 	{PRO_NET_WIFI_VAP_HOST, pro_net_wifi_vap_host_hander},
+	{PRO_NET_WIFI_VAP_HOST_5G, pro_net_wifi_vap_host_5g_hander},
 	{PRO_NET_DHCPD, pro_net_dhcpd_handler},
 	{PRO_NET_QOS, pro_net_qos_handler},
 	{PRO_NET_TESTSPEED, pro_net_testspeed_handler},
 	{PRO_NET_URL_SAFE_REDIRECT, pro_net_url_safe_redirect_handler},
 	{PRO_NET_RULE_TABLE_SECURITY, pro_net_rule_table_security_handler},
+	{PRO_NET_VPN_INFO, cgi_net_vpn_handler},
+	
 	{PRO_SYS_DEVICEID, pro_sys_deviceid_handler},
 	{PRO_SYS_FIRMSTATUS, pro_sys_firmstatus_handler},
 	{PRO_SYS_FIRMUP, pro_sys_firmup_handler},
@@ -184,6 +211,7 @@ static cgi_protocol_t pro_list[] ={
 	{PRO_SYS_SETTING, pro_sys_setting_handler},
 	{PRO_SYS_LOGIN, pro_sys_login_handler},
 	{PRO_SYS_MTD_PARAM, cgi_mtd_param_handler},
+	{PRO_RESET_FIRST_LOGIN, pro_reset_first_login_handler},
 	{NULL, NULL},
 };
 

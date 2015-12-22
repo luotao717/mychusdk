@@ -6,6 +6,9 @@
 /*
 CSO: cloud server order
 */
+#define CSO_XX -1
+#define CSO_LINK 1
+#define CSO_WAIT 2
 #define CSO_NTF_KEY 1000
 #define CSO_REQ_ROUTER_FIRST 1002
 #define CSO_ACK_ROUTER_FIRST 1003
@@ -20,7 +23,7 @@ CSO: cloud server order
 #define CSO_NTF_ROUTER_VERSION 1104
 #define CSO_REQ_ROUTER_RELEASE 1105
 #define CSO_ACK_ROUTER_RELEASE 1106
-#define CSO_NTF_ROUTER_HEARWARE 1107
+#define CSO_NTF_ROUTER_HARDWARE 1107
 #define CSO_NTF_ROUTER_BIND 1108
 #define CSO_NTF_ROUTER_RELEASE 1109
 
@@ -55,15 +58,27 @@ CSO: cloud server order
 #define CSO_ACK_ROUTER_CONFIG  1138
 #define CSO_REQ_CONFIG_VER	1139
 #define CSO_ACK_CONFIG_VER  1140
+#define CSO_REQ_AREA_CONFIG  1141
+#define CSO_ACK_AREA_CONFIG  1142
+#define CSO_REQ_AREA_VER  1143
+#define CSO_ACK_AREA_VER  1144
 
 #define IGD_CLOUD_CACHE_MX 100
-#define IGD_CLOUD_MSG_LEN 0x2000
-#define CLOUD_RCVBUF_SIZE_MAX   (0x4000)
 
-#define CC_PUSH1(buf,i,d)   (*((unsigned char *)&buf[i]) = (unsigned char)(d))
-#define CC_PUSH2(buf,i,d)   (*((unsigned short *)&buf[i]) = htons(d))
-#define CC_PUSH4(buf,i,d)   (*((unsigned int *)&buf[i]) = htonl(d))
-#define CC_PUSH_LEN(buf,i,data,len)   memcpy(buf+(i),data,len)
+#define CC_PUSH1(buf, i, d)   (*((unsigned char *)&buf[i]) = (unsigned char)(d))
+#define CC_PUSH2(buf, i, d)   (*((unsigned short *)&buf[i]) = (unsigned short)htons((unsigned short)d))
+#define CC_PUSH4(buf, i, d)   (*((unsigned int *)&buf[i]) = (unsigned int)htonl((unsigned int)d))
+#define CC_PUSH_LEN(buf, i, data, len)   memcpy(buf+(i), data, len)
+
+#define CC_PULL1(buf, i)   *(unsigned char *)&buf[i]
+#define CC_PULL2(buf, i)   ntohs(*(unsigned short *)&buf[i])
+#define CC_PULL4(buf, i)   ntohl(*(unsigned int *)&buf[i])
+#define CC_PULL_LEN(buf, i, dst, len)   memcpy(dst, &buf[i], len)
+
+#define N_MAX(a, b)  (((a) > (b)) ? (a) : (b))
+#define N_MIN(a, b)  (((a) > (b)) ? (b) : (a))
+
+#define NF2_MAC "%02X%02X%02X%02X%02X%02X"
 
 //used by mu progress
 #define CC_CALL_ADD(sbuf,slen)  mu_call(IGD_CLOUD_CACHE_ADD, sbuf, slen, NULL, 0)
@@ -98,15 +113,23 @@ enum CLOUD_CONF_TYPE {
 	CCT_VENDER,
 	CCT_TSPEED,
 	CCT_STUDY_URL,
-	CCT_JS,
+	CCT_VPN_DNS,
 	CCT_ERRLOG, //must together be first
 	CCT_URLLOG, //must together
 	CCT_URLSAFE, //must together
 	CCT_URLSTUDY, //must together
 	CCT_URLHOST, //must together
 	CCT_URLREDIRECT, //must together
-	CCT_CHECKUP, //must together be last
-	CCT_MAX,
+	CCT_VPN_SERVEER, //must together
+	CCT_CHECKUP, //must together
+	CCT_MAX, //must be last
+};
+
+/*CCA: cloud conf alone */
+enum CLOUD_CONF_ALONE {
+	CCA_JS = 1, //must first
+
+	CCA_MAX, //must last
 };
 
 #define RCONF_RETRY_NUM   3
@@ -116,6 +139,8 @@ enum CLOUD_CONF_TYPE {
 #define RCONF_DIR_TMP  "/tmp/rconf"
 #define RCONF_DIR_NEW  "/tmp/rconf_new"
 
+#define ALONE_DIR  "/etc/alone"
+
 #define RCONF_FLAG_VER           "VER:"
 #define RCONF_FLAG_L7            "F01:"
 #define RCONF_FLAG_UA            "F02:"
@@ -124,7 +149,6 @@ enum CLOUD_CONF_TYPE {
 #define RCONF_FLAG_VENDER        "F05:"
 #define RCONF_FLAG_TSPEED        "F06:"
 #define RCONF_FLAG_STUDY_URL     "F07:"
-#define RCONF_FLAG_JS            "F08:"
 #define RCONF_FLAG_ERRLOG        "F09:"
 #define RCONF_FLAG_URLLOG        "F10:"
 #define RCONF_FLAG_URLSAFE       "F11:"
@@ -132,21 +156,34 @@ enum CLOUD_CONF_TYPE {
 #define RCONF_FLAG_URLHOST       "F13:"
 #define RCONF_FLAG_URLREDIRECT   "F14:"
 #define RCONF_FLAG_CHECKUP       "F15:"
+#define RCONF_FLAG_VPNSERVER     "F16:"
+#define RCONF_FLAG_VPNDNS        "F17:"
 
 struct nlk_cloud_config {
 	struct nlk_msg_comm comm;
 	int ver[CCT_MAX];
 };
 
+/*ICFT: igd cloud flag*/
+enum IGD_CLOUD_FLAG_TYPE {
+	ICFT_ONLINE = 0,
+	ICFT_CHECK_RCONF,
+	ICFT_UP_RCONF_VER,
+
+	ICFT_MAX, //must last
+};
+
 enum {
 	IGD_CLOUD_INIT = DEFINE_MSG(MODULE_CLOUD, 0),
 	IGD_CLOUD_CACHE_ADD,
 	IGD_CLOUD_CACHE_DUMP,
-	IGD_CLOUD_RCONF,
 	IGD_CLOUD_RCONF_FLAG,
-	IGD_CLOUD_RCONF_VER,
 	IGD_CLOUD_RCONF_GET,
 	IGD_CLOUD_RCONF_GET_INFO,
+	IGD_CLOUD_FLAG,
+	IGD_CLOUD_ALONE_CHECK_UP,
+	IGD_CLOUD_ALONE_LOCK,
+	IGD_CLOUD_ALONE_VER,
 };
 
 extern int igd_cloud_call(MSG_ID msgid, void *data, int d_len, void *back, int b_len);

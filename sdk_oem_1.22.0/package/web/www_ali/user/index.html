@@ -153,14 +153,14 @@
                                     <tr>
                                         <td>
                                             <div class="tblist">
-                                                <span class="tit">固件版本</span>
-                                                <span class="blue" id="version">...</span>
+                                                <span class="tit">固件型号</span>
+                                                <span class="blue" id="firmware_model">...</span>
                                             </div>
                                         </td>
                                         <td>
                                             <div class="tblist">
-                                                <span class="tit"></span>
-                                                <span class="blue"></span>
+                                                <span class="tit">固件版本</span>
+                                                <span class="blue" id="version">...</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -372,13 +372,6 @@
                                                     <span class="sp-l">WIFI名称</span>
                                                     <span class="sp-r"><label class="noinpt" id="wf_name">CYWiFi</label></span>
                                                 </li>
-                                                <li id="enter_pwd" class="hide">
-                                                    <span class="sp-l">WIFI密码</span>
-                                                    <span class="sp-r new-sp">
-                                                        <label for="wf_pwd">请输入WIFI密码</label>
-                                                        <input type="text" name="wf_pwd" class="inpt" id="wf_pwd" autocomplete="off">
-                                                    </span>
-                                                </li>
                                                 <li>
                                                     <span class="sp-l">连接状态</span>
                                                     <span class="sp-r"><label class="noinpt" id="noinpt" style="color:#e4007f;">未中继</label></span>
@@ -396,7 +389,6 @@
                                             <table width="100%" cellpadding="0" cellspacing="0">
                                                 <thead>
                                                     <tr>
-                                                        <td width="70">选择</td>
                                                         <td width="143">WiFi名称</td>
                                                         <td width="170">MAC地址</td>
                                                         <td width="40">信道</td>
@@ -412,9 +404,9 @@
                                                 </table>
                                             </div>
                                             <div class="btn-box">
-                                                <input type="hidden" id="security">
-                                                <input type="hidden" id="channel">
-                                                <input type="button" class="btn" id="btn_4" value="连 接">
+                                                <!--                                                <input type="hidden" id="security">-->
+                                                <!--                                                <input type="hidden" id="channel">-->
+                                                <!--                                                <input type="button" class="btn" id="btn_4" value="连 接">-->
                                             </div>
                                         </div>
                                     </div>
@@ -1051,10 +1043,32 @@
                     <!-- 上传更新固件 end-->
                     <input type="hidden" id="main_mac">
                     <input type="hidden" id="mac_inpt">
-                    <input type="hidden" id="channel">
                 </div>
             </div>
         </div>
+        <!-- 无线中继 -->
+        <div class="wifiConnectLayer" id="wifi_zj">
+            <div class="bg"></div>
+            <div class="con">
+                <p id="cyname"></p>
+                <ul class="list" id="have_pwd">
+                    <li>
+                        <span class="sp-l">无线密码</span>
+                        <span class="sp-r">
+                            <label for="wf_pwd">请输入无线密码</label>
+                            <input type="text" name="wf_pwd" class="inpt" id="wf_pwd" autocomplete="off">
+                        </span>
+                    </li>
+                </ul>
+                <div class="box">
+                    <input type="hidden" id="channel">
+                    <input type="hidden" id="data_sec">
+                    <a href="javascript:;" class="btn s-btn" id="wifi_zj_confirm">连接</a>
+                    <a href="javascript:;" class="btn s-btn cannel">取消</a>
+                </div>
+            </div>
+        </div>
+        <!-- 无线中继 end-->
     </body>
 </html>
 <script>

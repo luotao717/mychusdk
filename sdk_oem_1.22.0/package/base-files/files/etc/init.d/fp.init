@@ -5,12 +5,13 @@ SERVICE_USE_PID=1
 
 START=70
 
+kver=`ls /lib/modules`
 start() {
-	insmod fp
+	insmod /lib/modules/${kver}/fp.ko
 }
 
 stop() {
-	rmmod fp
+	rmmod /lib/modules/$kver/fp.ko
 }
 
 

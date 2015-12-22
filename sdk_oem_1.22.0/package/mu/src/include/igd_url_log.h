@@ -4,7 +4,6 @@
 #define URL_LOG_ZIP "/tmp/url_log.gz"
 #define URL_LOG_FILE "/tmp/url_log"
 #define URL_LOG_DOMAIN_FILE "/tmp/rconf/domain.txt"
-#define URL_LOG_DATA_MX 200 * URL_LOG_MX_NR
 #define URL_LOG_LEN_MX URL_LOG_LIST_MX * IGD_URL_LEN
 
 #define URL_LOG_MOD_INIT DEFINE_MSG(MODULE_URLLOG, 0)

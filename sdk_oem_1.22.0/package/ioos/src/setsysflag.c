@@ -10,6 +10,14 @@ static void usage(void)
 	printf("\tset [bit] [flag]\n");
 	printf("\tsetplat [plat]\n");
 	printf("\tgetplat\n");
+	printf("\tsetkey\n");
+	printf("\tgetkey\n");
+	printf("\tsetpwd\n");
+	printf("\tgetpwd\n");
+	printf("\tsetmod\n");
+	printf("\tgetmod\n");
+	printf("\tsetname\n");
+	printf("\tgetname\n");
 	printf("DESCRIPTION:\n");
 	printf("\tbit:0   reset\n");
 	printf("\t    other nonsupport\n");
@@ -20,6 +28,14 @@ extern int get_sysflag(unsigned char bit);
 extern int set_sysflag(unsigned char bit, unsigned char fg);
 extern int get_platinfo(unsigned char *plat);
 extern int set_platinfo(unsigned char plat);
+extern int get_key(void);
+extern int set_key(char *key);
+extern int get_pwd(void);
+extern int set_pwd(char *pwd);
+extern int get_mod(void);
+extern int set_mod(char *mod);
+extern int get_devname(void);
+extern int set_devname(char *devname);
 
 int main(int argc, char *argv[])
 {
@@ -65,8 +81,79 @@ int main(int argc, char *argv[])
 		}
 		printf("plat is %d\n", plat);
 		return ret;
+	} else if (!strcmp(argv[1], "setkey")) {
+		if (!argv[2]) {
+			printf("input err\n");
+			goto err;
+		}
+		ret = set_key(argv[2]);
+		if (ret) {
+			printf("set key error\n");
+			goto err;
+		}
+		return ret;
+	} else if (!strcmp(argv[1], "getkey")) {
+		ret = get_key();
+		if (ret) {
+			printf("get key error\n");
+			goto err;
+		}
+		return ret;
+	} else if (!strcmp(argv[1], "setpwd")) {
+		if (!argv[2]) {
+			printf("input err\n");
+			goto err;
+		}
+		ret = set_pwd(argv[2]);
+		if (ret) {
+			printf("set pwd error\n");
+			goto err;
+		}
+		return ret;
+	} else if (!strcmp(argv[1], "getpwd")) {
+		ret = get_pwd();
+		if (ret) {
+			printf("get pwd error\n");
+			goto err;
+		}
+		return ret;
+	} else if (!strcmp(argv[1], "setmod")) {
+		if (!argv[2]) {
+			printf("input err\n");
+			goto err;
+		}
+		ret = set_mod(argv[2]);
+		if (ret) {
+			printf("set mod error\n");
+			goto err;
+		}
+		return ret;
+	} else if (!strcmp(argv[1], "getmod")) {
+		ret = get_mod();
+		if (ret) {
+			printf("get mod error\n");
+			goto err;
+		}
+		return ret;
+	} else if (!strcmp(argv[1], "setname")) {
+		if (!argv[2]) {
+			printf("input err\n");
+			goto err;
+		}
+		ret = set_devname(argv[2]);
+		if (ret) {
+			printf("set devname error\n");
+			goto err;
+		}
+		return ret;
+	} else if (!strcmp(argv[1], "getname")) {
+		ret = get_devname();
+		if (ret) {
+			printf("get devname error\n");
+			goto err;
+		}
+		return ret;
 	}
-
 	if ((bit >= SYSFLAG_MAX) || 
 		((fg != 0) && (fg != 1))) {
 		printf("input err\n");

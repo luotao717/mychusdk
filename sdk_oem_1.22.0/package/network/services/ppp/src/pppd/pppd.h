@@ -60,6 +60,7 @@
 #include "ipc_msg.h"
 #include "igd_lib.h"
 #include "igd_interface.h"
+#include "igd_vpn.h"
 
 #if defined(__STDC__)
 #include <stdarg.h>

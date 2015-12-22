@@ -52,6 +52,12 @@
 #define L7_GET_MID(appid) (appid / L7_APP_MX)
 #define L7_GET_APPID(appid) (appid % L7_APP_MX)
 
+#define IGD_NAME_LEN 32
+#define IGD_SUFFIX_LEN 16
+#define IGD_DNS_LEN 40
+#define IGD_URI_LEN 32
+#define IGD_URL_LEN (IGD_DNS_LEN + IGD_URI_LEN)
+
 enum {
 	L7_APP_HTTP_DL = L7_APP_MX * L7_MID_DL + 1,
 };
@@ -67,6 +73,8 @@ enum {
 enum {
 	PPPD_TYPE_PPPOE_SERVER = 1,
 	PPPD_TYPE_PPPOE_CLIENT,
+	PPPD_TYPE_PPTP_CLIENT,
+	PPPD_TYPE_3G_CLIENT,
 };
 
 enum {
@@ -96,6 +104,7 @@ enum {
 	LOG_GRP_MID_UA,
 	LOG_GRP_MID_HOST,
 	LOG_GRP_MID_OS_TYPE,
+	LOG_GRP_MID_RULE,
 };
 
 enum {
@@ -185,7 +194,15 @@ struct inet_l3 {
 #define INET_HOST_UGRP	2 /* match ugrp */
 #define INET_HOST_MAC	3 /* match mac */
 #define INET_HOST_PC	4 /* match pc */
-#define INET_HOST_MOBILE 5 /* match MOBILE */
+#define INET_HOST_WINDOWS	5 /* match pc windown*/
+#define INET_HOST_LINUX	6 /* match pc linux*/
+#define INET_HOST_MACOS	7 /* match pc macos*/
+#define INET_HOST_MOBILE  8 /* match mobile*/
+#define INET_HOST_PHONE  9 /* match mobile*/
+#define INET_HOST_AND_PHONE  10 /* match android phone*/
+#define INET_HOST_APP_PHONE 11 /* match iphone*/
+#define INET_HOST_WIN_PHONE 12 /* match win phone*/
+#define INET_HOST_IPAD 13 /* match ipad*/
 
 struct inet_host {
 	int type;
@@ -212,26 +229,29 @@ struct inet_l7 {
 	uint32_t appid;
 };
 
-#ifndef __KERNEL__
-enum {
-	URL_TARGET_PASS = 0,
-	URL_TARGET_STUDY,
-	URL_TARGET_REDIRECT,
-	URL_TARGET_WEB_AUTH,
-	URL_TARGET_DROP,
-	URL_TARGET_ADVERT,
-	URL_TARGET_MX,
+#define URL_RULE_LOG_MX 128
+#define URL_RULE_DST_LEN 128
+
+/*url rule log*/
+struct url_log_node {
+	time_t time;
+	unsigned char mac[6];
+	char host[IGD_DNS_LEN];
+	char dst[URL_RULE_DST_LEN];
 };
 
 enum {
 	URL_MID_PASS = 0,
 	URL_MID_WEB_AUTH,
+	URL_MID_URI_SUB, /*used when www.xx.com -> www.xx.com/?xx=xxx */
 	URL_MID_REDIRECT,
 	URL_MID_DROP,
 	URL_MID_ADVERT,
 	URL_MID_MX,
 };
-#endif
+
+#define NLK_URL_KEY_RULE	0
+#define NLK_URL_KEY_RSP		1
 
 #define NLK_ACTION_ADD 	0
 #define NLK_ACTION_MOD	1
@@ -297,13 +317,6 @@ struct nlk_dhcp_msg {
 	struct host_dhcp_trait dhcp[5];
 };
 /*dhcp info end*/
-
-#define IGD_NAME_LEN 32
-#define IGD_URL_HOST_LEN 32
-#define IGD_URL_URI_LEN 32
-#define IGD_SUFFIX_LEN 16
-#define IGD_URL_LEN (IGD_URL_HOST_LEN + IGD_URL_URI_LEN)
-#define IGD_DNS_LEN 32
 
 enum {	IGD_ERR_FAILURE = -1,
 	IGD_ERR_GROUP = -2, /* group invalid */
@@ -433,11 +446,14 @@ enum NLK_MSG_TYPE {
 	NLK_MSG_BROADCAST,
 	NLK_MSG_URL, /* url pass and drop rule */
 	NLK_MSG_NETDEV,
+	NLK_MSG_VPN,
 	NLK_MSG_END = 0x7FFF, //must  last
 };
 
 /*used for url safe*/
 #define DNS_IP_MX 2
+#define URL_WLIST_PER_MX 128
+
 enum url_safe_msg {
 	URL_SET_PARAM = 1,
 	URL_SET_SAFE_IP,
@@ -453,7 +469,7 @@ struct nlk_url_set {
 struct nlk_url_ip {
 	struct nlk_msg_comm comm;
 	uint32_t addr;
-	unsigned char url[IGD_URL_HOST_LEN];
+	unsigned char url[IGD_DNS_LEN];
 };
 
 struct nlk_url_sec {
@@ -463,7 +479,7 @@ struct nlk_url_sec {
 	uint32_t rip;//redirect ip
 	uint16_t sport;//server port
 	uint16_t rport;//redirect port
-	char rdhost[IGD_URL_HOST_LEN];
+	char rdhost[IGD_DNS_LEN];
 };
 /*url safe end*/
 
@@ -482,8 +498,8 @@ struct nlk_url_data {
 	uint16_t type;
 	uint16_t id;
 	char suffix[IGD_SUFFIX_LEN];
-	char url[IGD_URL_HOST_LEN];
-	char uri[IGD_URL_URI_LEN];
+	char url[IGD_DNS_LEN];
+	char uri[IGD_URI_LEN];
 };
 
 struct nlk_url_log {
@@ -498,8 +514,10 @@ struct nlk_url {
 	struct nlk_msg_comm comm;
 	struct inet_host src;
 	struct inet_l3 l3; /* only support url and url id */
-	int times;/*match times*/
-	int type;
+	unsigned short extra; /* only used by study target  */
+	unsigned short type;
+	unsigned short times; /* match times */
+	unsigned short log; /* is do log */
 };
 
 /*url statistics end*/
@@ -519,6 +537,22 @@ struct nlk_web_auth {
 };
 /*web auth end*/
 
+/*vpn start*/
+enum {
+	VPN_SET_PARAM = 0,
+	VPN_SET_DNS_LIST,
+};
+
+#define VPN_DNS_PER_MX 512
+
+struct nlk_vpn {
+	struct nlk_msg_comm comm;
+	unsigned int enable;
+	unsigned int devid;
+	struct in_addr sip[DNS_IP_MX];
+};
+/*vpn end*/
+
 struct nlk_host {
 	struct nlk_msg_comm comm;
 	struct in_addr addr;
@@ -536,8 +570,8 @@ struct nlk_http_host {
 };
 
 struct http_host_log {
-	char host[IGD_URL_HOST_LEN];
-	char uri[IGD_NAME_LEN];
+	char host[IGD_DNS_LEN];
+	char uri[IGD_URI_LEN];
 	unsigned long seconds;
 	int times;
 };
@@ -695,6 +729,10 @@ struct time_comm {
 	unsigned char end_hour;
 	unsigned char end_min;
 };
+
+#define HTTP_RSP_RST	0
+#define HTTP_RSP_404	1
+#define HTTP_RSP_MX	2
 
 #define RD_KEY_IP	0
 #define RD_KEY_MAC	1

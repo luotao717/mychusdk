@@ -32,6 +32,7 @@ define Build/Prepare
 endef
 
 TARGET_CFLAGS += -luci -Wall
+TARGET_CFLAGS += -Wno-error=format-security 
 
 define Build/Configure
 endef

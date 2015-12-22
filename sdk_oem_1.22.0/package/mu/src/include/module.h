@@ -25,10 +25,19 @@ typedef struct mu_module {
 #define MODULE_ALI 11
 #define MODULE_CLOUD 12
 #define MODULE_ADVERT 13
+#define MODULE_VPN 14
 
 #define MODULE_MX 256
 
 #define IPC_PATH_MU "/tmp/ipc_path_mu"
 #define mu_msg(mgsid, data, len, rbuf, rlen) ipc_send(IPC_PATH_MU, mgsid, data, len, rbuf, rlen)
+
+#ifdef FLASH_4_RAM_32
+#define MU_DEBUG(fmt,args...) do{}while(0)
+#else
 #define MU_DEBUG(fmt, args...) igd_log("/tmp/mu.log", fmt, ##args)
+#endif
+
+#define MU_ERROR(fmt, args...) igd_log("/tmp/mu.err", fmt, ##args)
+
 #endif

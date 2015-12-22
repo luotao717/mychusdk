@@ -840,8 +840,8 @@ $(function() {
                 return;
             }
 
-            if (wf_pwd.length > 0 && wf_pwd.length < 8) {
-                getMsg('无线密码不能少于8位！', 1, '#wf_pwd');
+            if (wf_pwd.length > 0 && wf_pwd.length < 6) {
+                getMsg('无线密码不能少于6位！', 1, '#wf_pwd');
                 return;
             }
         }
@@ -894,7 +894,7 @@ $(function() {
     });
 
     //确认 添加隐藏ssid
-    $("#ssid_confirm").click(function() {
+    $("#ssid_confirm").click(function () {
         var ssid = $("#ssid").val();
         var pwd = $("#ssid_pwd").val();
         var channel = $("#check_channel").val();
@@ -915,31 +915,17 @@ $(function() {
             return;
         }
 
-        if (pwd.length > 0 && pwd.length < 8) {
-            getMsg('无线密码不能少于8位！', 1, '#ssid_pwd');
+        if (pwd.length > 0 && pwd.length < 6) {
+            getMsg('无线密码不能少于6位！', 1, '#ssid_pwd');
             return;
         }
         layer.closeAll();
-//        if (!$("#pwd_li").hasClass("hide")) {
-//            $("#enter_pwd").removeClass('hide');
-//        }
-
-//        $("#security").val(check_wpa + '/TKIPAES');
-//        $("#channel").val(channel);
-//        $("#wf_name").text(ssid);
-//        $("#wf_pwd").val(pwd).siblings("label").hide();
-//        $("input[name=wifiRadio]").attr("checked", false);
-//        if ($("#pwd_li").hasClass("hide")) {
-//            $("#enter_pwd").removeClass('show');
-//            $("#enter_pwd").addClass('hide');
-//        }
         ssid = encodeURIComponent(ssid);
         pwd = encodeURIComponent(pwd);
         connectWisp(ssid, pwd, mac, channel, check_wpa);
-//        layer.msg("添加成功,请点连接进行中继!");
     });
 
-    $("#check_wpa").live("change", function() {
+    $("#check_wpa").live("change", function () {
         if ($(this).val() == 1) {
             $("#pwd_li").addClass("hide");
         } else {
@@ -947,7 +933,53 @@ $(function() {
         }
     });
 
-    $("#lan_btn").click(function() {
+    //无线中继弹出层
+    $("#getWifiList tr").live("click", function () {
+        var lock = $(this, 'td div').find('i').hasClass('lock');
+        if (lock != true) {
+            $("#have_pwd").addClass("hide");
+        } else {
+            $("#have_pwd").removeClass("hide");
+        }
+        var ssid = $(this).attr('ssid');
+        var channel = $(this).attr("channel");
+        var sec = $(this).attr('sec');
+        $("#wf_name").text(ssid);
+        $("#cyname").text(ssid);
+        $("#channel").val(channel);
+        $("#data_sec").val(sec);
+
+        loading(0, $("#wifi_zj"), 1);
+    });
+
+    $("#wifi_zj_confirm").click(function () {
+        var ssid = $("#cyname").text();
+        var wf_pwd = $("#wf_pwd").val();
+        var sec = $("#data_sec").val();
+        var channel = $("#channel").val();
+        var mac = myMac;
+        ssid = encodeURIComponent(ssid);
+        if (!$("#have_pwd").hasClass("hide")) {
+            if (wf_pwd == '') {
+                getMsg('请输入无线密码！', 1, '#wf_pwd');
+                return;
+            }
+
+            if (wf_pwd.length > 0 && wf_pwd.length < 6) {
+                getMsg('无线密码不能少于6位！', 1, '#wf_pwd');
+                return;
+            }
+        }
+        wf_pwd = encodeURIComponent(wf_pwd);
+        if (wf_pwd == null || wf_pwd == '') {
+            wf_pwd = 'NONE';
+            sec = 'NONE';
+        }
+        layer.closeAll();
+        connectWisp(ssid, wf_pwd, mac, channel, sec);
+    });
+
+    $("#lan_btn").click(function () {
         var ip = $("#lan_ip").val();
         var ipMark = $("#lanIpMark").val();
         var mask = $("#lan_mask").val();

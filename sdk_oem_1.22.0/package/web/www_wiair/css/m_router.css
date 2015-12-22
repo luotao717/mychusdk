@@ -430,6 +430,7 @@ img{width:100%;}
     color:#fff;
     font-size:1rem;
     margin-top:2rem;
+    line-height:150%;
 }
 .con .list{	
     width:90%;
@@ -689,3 +690,119 @@ img{width:100%;}
 .mlsp{margin-left:6px;}
 .macInpt{display:none;}
 .mac_box{margin-left:6px;color:#fff;}
+
+/*vpn设置*/
+.bd-box{
+	padding:1rem;
+	color:#fff;
+	text-align:center;
+}
+.vpn-hd{
+    font-size:2.5rem;
+    font-weight:normal;
+    color:#fff;
+    text-align:center;
+}
+.vpn-hd2{
+    font-size:1.2rem;
+    color:#fff;
+    text-align:center;
+}
+.vpn-tit{
+	margin:1rem 0;
+	font-size:1.2rem;
+}
+.vpn-desc{
+	margin:2rem 0;
+}
+
+.code-box{
+	position:relative;
+	text-align:left;
+	height:3rem;
+	line-height:3rem;
+}
+.code-box label{
+	position:absolute;
+	left:1rem;
+	top:0;
+	height:3rem;
+	line-height:3rem;
+	color: #77d1f8;
+    cursor: text;
+	width:100px;
+}
+.code-box .inpt{
+	border:1px #e5e5e5 solid;
+	height:2.6rem;
+	line-height:2.6rem;
+	width:50%;
+	border-radius:5px;
+}
+.vpn-list .nobd{border:none;}
+.code-btn{
+	width:35%;
+	height:3rem;
+	line-height:3rem;
+	text-align:center;
+	color:#fff;
+	background:#28a9e1;
+	position:absolute;
+	right:0;
+	top:0;
+	border:none;
+	outline:none;
+	cursor:pointer;
+	border-radius:5px;
+}
+#vpn_reg .bg{_height:300px;}
+
+.tc-box{
+	margin:2rem auto;
+	border:1px #d4efff solid;
+	border-radius:15px;
+	padding:6rem 0;
+	color:#d4efff;
+}
+.tc-box p{
+	font-size:1.2rem;
+	margin:.5rem 0;
+}
+
+.pay{
+	padding:0 0 0 1rem;
+	text-align:left;
+}
+.pay-box{
+	margin-top:.5rem;
+}
+.vpn-tit2{
+	padding:.2rem 0;
+	font-size:1.2rem;
+	font-weight:bold;
+	color:#fff;
+}
+.pay-ico{
+	width:1.5rem;
+	height:1.5rem;
+	display:inline-block;
+	margin-right:.5rem;
+	vertical-align:middle;
+}
+
+.rdo{
+	vertical-align:middle;
+	margin-right:.5rem;
+}
+.pay-box li{
+	padding-left:1rem;
+	margin:.5rem 0;
+}
+.tc-box .bz{
+	font-size:.875rem;
+}
+
+
+
+
+/*vpn设置 end*/

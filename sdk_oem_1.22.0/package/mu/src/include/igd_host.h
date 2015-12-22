@@ -52,6 +52,7 @@ enum HOST_INFO_RECORD_FLAG {
 	HIRF_ONLINE_PUSH,
 	HIRF_VAP,
 	HIRF_WIRELESS,
+	HIRF_WIRELESS_5G,
 
 	HIRF_MAX, //must last
 };
@@ -217,6 +218,7 @@ struct host_intercept_url_list {
 	struct list_head list;
 	char *url;
 	char *type;
+	char *type_en;
 	unsigned long time;
 	unsigned short dport;
 	unsigned short sport;
@@ -324,7 +326,8 @@ struct host_app_dump_info {
 	unsigned long up_speed;
 	uint64_t up_bytes;
 	uint64_t down_bytes;
-	struct uptime_record_info uptime;
+	unsigned long uptime;
+	unsigned long ontime;
 	struct time_comm lt;
 	unsigned long flag[BITS_TO_LONGS(HARF_MAX)];
 };
@@ -343,7 +346,8 @@ struct host_dump_info {
 	unsigned long down_speed;
 	uint64_t up_bytes;
 	uint64_t down_bytes;
-	struct uptime_record_info uptime;
+	unsigned long uptime;
+	unsigned long ontime;
 	struct limit_speed_info ls;
 };
 
@@ -378,6 +382,7 @@ struct app_mod_dump {
 struct host_intercept_url_dump {
 	char url[IGD_URL_LEN];
 	char type[32];
+	char type_en[32];
 	unsigned long time;
 	unsigned short dport;
 	unsigned short sport;

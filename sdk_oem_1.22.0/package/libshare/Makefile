@@ -11,9 +11,11 @@ PKG_NAME:=libshare
 PKG_VERSION:=1.0.0
 PKG_RELEASE:=1
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)
-KERNEL_DIR:=../../kernel/linux-2.6.36/include/linux/netfilter_ipv4/nf_igd
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/kernel.mk
+
+KERNEL_DIR:=$(LINUX_DIR)/include/linux/netfilter_ipv4/nf_igd
 
 define Package/$(PKG_NAME)
   SECTION:=libs

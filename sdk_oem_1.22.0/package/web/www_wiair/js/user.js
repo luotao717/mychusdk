@@ -1,20 +1,20 @@
 /* user.js */
-$(function() {
+$(function () {
     /*************** user/index **********************/
     //输入框焦点
-    $(".inpt").focusin(function() {
+    $(".inpt").focusin(function () {
         $(this).siblings("label").hide();
-    }).focusout(function() {
+    }).focusout(function () {
         if ($(this).val() == '') {
             $(this).siblings("label").show();
         }
     })
     //取消按钮
-    $(".cannel").live("click", function() {
+    $(".cannel").live("click", function () {
         layer.closeAll();
     })
     //设置用户名 密码
-    $("#user").live("click", function() {
+    $("#user").live("click", function () {
         layer.open({
             type: 1,
             title: false,
@@ -25,7 +25,7 @@ $(function() {
         });
     });
 
-    $(".menu a").click(function() {
+    $(".menu a").click(function () {
         var _index = $(this).index();
         if (_index == 0) {
             document.location = "index.html?tt=" + new Date().getTime();
@@ -34,14 +34,16 @@ $(function() {
         } else if (_index == 2) {
             document.location = "wireless_setting.html?tt=" + new Date().getTime();
         } else if (_index == 3) {
-            document.location = "more.html?tt=" + new Date().getTime();
+            document.location = "vpn.html?tt=" + new Date().getTime();
         } else if (_index == 4) {
+            document.location = "more.html?tt=" + new Date().getTime();
+        } else if (_index == 5) {
             document.location = "version.html?tt=" + new Date().getTime();
         }
     });
 
     //无线设置
-    $("#wifi_set").live("click", function() {
+    $("#wifi_set").live("click", function () {
         var poplayer = layer.open({
             type: 1,
             title: false,
@@ -52,12 +54,14 @@ $(function() {
             skin: 'cy-class'
         });
         getSetPrice('get');
-        $("#close_btn").live("click", function() {
-            layer.close(poplayer);
-        })
     })
+
+    $("#close_btn").live("click", function () {
+        layer.closeAll();
+    })
+
     //开启/关闭wifi
-    $('input[name=onOff]').click(function() {
+    $('input[name=onOff]').click(function () {
         var val = $('input[name=onOff]:checked').val();
         if (val == 1) {
             $("#wifiOnOff").show();
@@ -67,7 +71,7 @@ $(function() {
         wifiSet(val);
     });
     //确认 无线设置
-    $("#wifi_set_confirm").click(function() {
+    $("#wifi_set_confirm").click(function () {
         var ssid = $("#ssid").val();
         var pwd = $("#wifi_pwd").val();
         var channel = $("#wifiChannel").val();
@@ -113,7 +117,7 @@ $(function() {
     //显隐密码
     var view_pwd = $(".pwd-icon");
     var flag = 1;
-    view_pwd.click(function() {
+    view_pwd.click(function () {
         if (flag == 1) {
             $(this).siblings("label").attr("for", $(this).siblings("input[type=text]").attr("id"));
             $(this).siblings("input[type=password]").hide();
@@ -128,11 +132,11 @@ $(function() {
             flag = 1;
         }
     })
-    $(".inpt").blur(function() {
+    $(".inpt").blur(function () {
         $(this).siblings(".inpt").val($(this).val());
     })
 
-    $(".macChoose").change(function() {
+    $(".macChoose").change(function () {
         var v = $(this).val();
         var typeId = $(this).attr('id');
         var Id = '';
@@ -161,7 +165,7 @@ $(function() {
 
 
     //确认 设置用户名 密码
-    $("#user_confirm").click(function() {
+    $("#user_confirm").click(function () {
         var pwd = $("#userpwd").val();
         if (pwd == '') {
             layer.tips('请输入密码', '#tips_userpwd', {
@@ -192,7 +196,7 @@ $(function() {
             url: actionUrl + "fname=system&opt=login&function=set&usrid=" + str_md5,
             dataType: "JSON",
             async: false,
-            success: function(data) {
+            success: function (data) {
                 if (data.error == 0) {
                     flag = true;
                 }
@@ -208,9 +212,168 @@ $(function() {
     })
     /*************** user/index end**********************/
 
-    $('input[name=wifi]').click(function() {
+    $('input[name=wifi]').click(function () {
         var val = $('input[name=wifi]:checked').val();
         getSetPrice('set', val);
+    });
+
+    //获取验证码
+    $("#getValicode").click(function () {
+        var param = {};
+        param.code = '101';
+        param.product = '0001';
+        param.phone = $("#phone_num").val();
+        if (param.phone == '') {
+            getMobileMsg('请输入手机号码！', 1, '#phone_num');
+            return;
+        }
+
+        if (!/^(((13[0-9]{1})|(15[0-9]{1})|(18[0-9]{1}))+\d{8})$/.test(param.phone)) {
+            getMobileMsg('手机号码不合法！', 1, '#phone_num');
+            return;
+        }
+        getVpn(param, 1);
+    });
+
+    //提交vpn用户注册
+    $("#vpn_confirm").click(function () {
+        var param = {};
+        param.name = $("#realname").val();
+        param.identify = $("#idcard").val();
+        param.phone = $("#phone_num").val();
+        param.pass = $.md5($("#vpnpass").val());
+        param.message = $("#vali_code").val();
+        param.product = '0001';
+        param.code = '102';
+        param.person = '1';
+        if (param.name == '') {
+            getMobileMsg('请输入真实姓名！', 1, '#realname');
+            return;
+        }
+
+//        if (/^([u4E00-u9FA5])*$/.test(param.realname)) {
+//            getMobileMsg('姓名不合法！');
+//            return;
+//        }
+
+        if (param.identify == '') {
+            getMobileMsg('请输入身份证号！', 1, '#idcard');
+            return;
+        }
+
+        if (!/^(\d{6})(\d{4})(\d{2})(\d{2})(\d{3})([0-9]|X)$/.test(param.identify)) {
+            getMobileMsg('身份证号不合法！', 1, '#idcard');
+            return;
+        }
+
+        if (param.phone == '') {
+            getMobileMsg('请输入手机号码！', 1, '#phone_num');
+            return;
+        }
+
+        if (!/^(((13[0-9]{1})|(15[0-9]{1})|(18[0-9]{1}))+\d{8})$/.test(param.phone)) {
+            getMobileMsg('手机号码不合法！', 1, '#phone_num');
+            return;
+        }
+
+        if (param.pass == '') {
+            getMobileMsg('请输入vpn密码！', 1, '#vpnpass');
+            return;
+        }
+        if ($("#vpnpass2").val() != $("#vpnpass").val()) {
+            getMobileMsg('两次输入的vpn密码不一致！', 1, '#vpnpass');
+            return;
+        }
+        if ($("#vali_code").val() == '') {
+            getMobileMsg('请输入手机验证码', 1, '#vali_code');
+            return;
+        }
+        getVpn(param, 2);
+
+//        layer.closeAll();
+//        layer.msg("注册成功!");
+    });
+
+    $("#vpn_login_confirm").click(function () {
+        var param = {};
+        param.code = '103';
+        param.phone = $("#phone_login").val();
+        param.pass = $.md5($("#pass_login").val());
+        param.product = '0001';
+        if (param.phone == '') {
+            getMobileMsg('请输入手机号码！', 1, '#phone_login');
+            return;
+        }
+
+        if (!/^(((13[0-9]{1})|(15[0-9]{1})|(18[0-9]{1}))+\d{8})$/.test(param.phone)) {
+            getMobileMsg('手机号码不合法！', 1, '#phone_login');
+            return;
+        }
+
+        if ($("#pass_login").val() == '') {
+            getMobileMsg('请输入vpn密码！', 1, '#pass_login');
+            return;
+        }
+        getVpn(param, 1);
+    });
+
+    $("#confirm_buy").click(function () {
+        vpnInfo('get');
+        var param = {};
+        param.code = '107';
+        param.product = '0001';
+        param.phone = vpnJsonObject.user;
+        param.pass = $.md5(vpnJsonObject.password);
+        param.id = $('input[name="choicepackage"]:checked').val();
+        param.method = $('input[name="paymethod"]:checked').val();
+        param.appid = '3';
+        param.appenv = '';
+        if (param.id != 1 && param.id != 2 && param.id != 3) {
+            getMobileMsg('请选择套餐！');
+            return;
+        }
+
+        getVpn(param, 2);
+    });
+
+    $("#pay_status").click(function () {
+        var param = {};
+        param.code = '108';
+        param.product = '0001';
+        param.order = vpnJson.order;
+        getVpn(param, 1);
+    });
+
+    $('.startvpn').live('click', function () {
+        var param = {};
+        param.code = '110';
+        param.product = '0001';
+        param.phone = vpnJsonObject.user;
+        param.pass = $.md5(vpnJsonObject.password);
+        param.cid = dhcpdmac.replace(/:/g, '');
+        param.buyid = $(this).attr('id');
+        param.open = '1';
+        var timestamp = JSON.stringify(Date.parse(new Date()));
+        param.timestamp = timestamp.substr(0,10);
+        if (vpnOnlineStatus == '1') {
+            param.open = '0';
+        }
+        getVpn(param, 1);
+    });
+
+    $('input[name="choicepackage"]').live('click', function () {
+        var vpnprice = $(this).attr('data');
+        $("#orderpice").text(vpnprice);
+    });
+
+    $("#vpn_register").click(function () {
+        var mob = getMobile();
+        if (mob == 1) {
+            $("#vpn_login").hide();
+            $("#vpn_reg").show();
+        } else {
+            loading(1, $("#vpn_reg"), 2);
+        }
     });
 
     /*************** 更新固件上传**********************/

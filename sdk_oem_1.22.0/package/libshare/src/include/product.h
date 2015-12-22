@@ -10,9 +10,8 @@
 #define NF_WAN_NUM_MX 1
 #define NF_LAN_NUM_MX 1
 #define NF_PORT_NUM_MX (NF_WAN_NUM_MX + NF_LAN_NUM_MX)
-#define WIFI_DEVNAME "ra0"
-#define VAP_DEVNAME "ra1"
 #define APCLI_DEVNAME "apcli0"
+#define APCLII_DEVNAME "apclii0"
 #define LAN_DEVNAME "br-lan"
 #define LAN_UINAME "lan"
 #define WIRE_DEVNAME	"eth0.1"
@@ -26,8 +25,16 @@
 #define WIFI_5G_BASIC_ID	10
 #define PORT_MX		5
 
-#define HOST_MX		64
-#define HOST_ALL_MX	64
-#define CONN_MX		4000
+//#define FLASH_4_RAM_32
+#ifdef FLASH_4_RAM_32
+#define HOST_MX		16
+#define HOST_ALL_MX	16
+#define CONN_MX		2000
+#else
+#define HOST_MX		3
+#define HOST_ALL_MX	3
+#define CONN_MX		500
+#endif
 #define HTTP_HOST_LOG_PER_MX	256
+
 #endif

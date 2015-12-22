@@ -1,12 +1,11 @@
-VER:1022
-F01:3
+VER:1035
+F01:6
 F02:3
 F03:1
 F04:1
 F05:1
 F06:1
 F07:2
-F08:38
 F09:1,secure.wiair.com
 F10:1,secure.wiair.com
 F11:1,secure.wiair.com
@@ -14,3 +13,5 @@ F12:1,hao.wiair.com
 F13:1,http.wiair.com
 F14:1,secure.wiair.com
 F15:1,api.wiair.com
+F16:1,secure.wiair.com
+F17:1

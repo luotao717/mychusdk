@@ -87,23 +87,15 @@ typedef struct _vif
     param hidden;          /* Hidden SSID */
     param cipher;          /* ccmp(aes),tkip */
     param key;             /* wpa psk */
+
+    param wepkey[4];       /* wep key, ugly, yep! */
+
     param auth_server;
     param auth_port;
     param auth_secret;
     param rekeyinteval;
     param preauth;
     param pmkcacheperiod;
-#if 0
-    struct
-    {
-        struct
-        {
-            int keyid;
-            char keys[13];  /* up to WEP128 */
-        } wep;
-        char wpa[32];
-    } _key;
-#endif
 } vif;
 
 typedef struct
@@ -121,17 +113,27 @@ void hooker(FILE * fp, param * p, const char * devname);
 */
 vif VIF =
 {
-    .ssid       = {NULL, "ssid", {0}, NULL,  NULL},
-    .authmode   = {NULL, "encryption", {0}, NULL,  NULL},
-    .hidden     = {NULL, "hidden", {0}, NULL,  NULL},
-    .cipher     = {NULL, "cipher", {0}, NULL,  NULL},
-    .key        = {NULL, "key", {0}, NULL,  NULL},
+    .ssid               = {NULL, "ssid", {0}, NULL,  NULL},
+    .authmode           = {NULL, "encryption", {0}, NULL,  NULL},
+    .hidden             = {NULL, "hidden", {0}, NULL,  NULL},
+    .cipher             = {NULL, "cipher", {0}, NULL,  NULL},
+
+    /* wpa key, or wep key index */
+    .key                = {NULL, "key", {0}, NULL,  NULL},
+
+    /* wep key group */
+    .wepkey             = {{NULL, "key1", {0}, NULL,  NULL},
+                           {NULL, "key2", {0}, NULL,  NULL},
+                           {NULL, "key3", {0}, NULL,  NULL},
+                           {NULL, "key4", {0}, NULL,  NULL}},
+
+    /* wpa & 8021x */
     .auth_server        = {NULL, "auth_server", "0", NULL,  NULL},
-    .auth_port        = {NULL, "auth_port", "1812", NULL,  NULL},
+    .auth_port          = {NULL, "auth_port", "1812", NULL,  NULL},
     .auth_secret        = {NULL, "auth_secret", {0}, NULL,  NULL},
-    .pmkcacheperiod        = {NULL, "pmkcacheperiod", {0}, NULL,  NULL},
-    .preauth        = {NULL, "preauth", {0}, NULL,  NULL},
-    .rekeyinteval        = {NULL, "rekeyinteval", {0}, NULL,  NULL},
+    .pmkcacheperiod     = {NULL, "pmkcacheperiod", {0}, NULL,  NULL},
+    .preauth            = {NULL, "preauth", {0}, NULL,  NULL},
+    .rekeyinteval       = {NULL, "rekeyinteval", {0}, NULL,  NULL},
 };
 
 param CFG_ELEMENTS[] =
@@ -140,7 +142,7 @@ param CFG_ELEMENTS[] =
            MTK_Wi-Fi_SoftAP_Software_Programmming_Guide_v3.6.pdf
     */
     {"CountryRegion", "region", {0}, hooker,  "1"},
-    {"CountryRegionABand", "aregion", {0}, hooker, "7"},
+    {"CountryRegionABand", "aregion", {0}, hooker, "5"},
     {"CountryCode", "country", {0}, hooker, NULL},
     {"BssidNum", NULL, {0}, hooker,  "1"},
     {"SSID1", NULL, {0}, hooker,  "OpenWrt"},
@@ -164,7 +166,7 @@ param CFG_ELEMENTS[] =
     {"TxBurst", "txburst", {0}, hooker,  "1"},
     {"PktAggregate", "pktaggre", {0}, hooker,  "0"},
     {"TurboRate", "turborate", {0}, hooker, "0"},
-    {"WmmCapable", "wmm", {0}, hooker, "1"},
+    {"WmmCapable", "wmm", {0}, hooker, "0"},
     {"APSDCapable", "apsd", {0}, hooker, "1"},
     {"DLSCapable", "dls", {0}, hooker, "0"},
     {"APAifsn", "apaifsn", {0}, hooker, "3;7;1;1"},
@@ -257,7 +259,7 @@ param CFG_ELEMENTS[] =
     {"HT_OpMode", "ht_opmode", {0}, hooker, "0"},
     {"HT_MpduDensity", NULL, {0}, hooker, "5"},
     {"HT_BW", "bw", {0}, hooker,  "0"},
-    {"VHT_BW", "bw", {0}, hooker,  "0"},
+    {"VHT_BW", "vbw", {0}, hooker,  "0"},
     {"VHT_SGI", "vht_sgi", {0}, hooker,  "1"},
     {"VHT_STBC", "vht_stbc", {0}, hooker, "0"},
     {"VHT_BW_SIGNAL", "vht_bw_sig", {0}, hooker,  "0"},
@@ -275,7 +277,7 @@ param CFG_ELEMENTS[] =
     {"WscSerialNumber", "wscserialnumber", {0}, hooker, NULL},
 
     /* Extra configurations found in 76x2e */
-    {"FixedTxMode", "fixedtxmode", {0}, hooker, "0"},
+    {"FixedTxMode", "fixedtxmode", {0}, hooker, "HT"},
     {"AutoProvisionEn", "autoprovision", {0}, hooker, "0"},
     {"FreqDelta", "freqdelta", {0}, hooker, "0"},
     {"CarrierDetect", "carrierdetect", {0}, hooker, "0"},
@@ -384,6 +386,7 @@ param CFG_ELEMENTS[] =
     {"ApCliKey4Str", NULL, {0}, NULL, NULL},
     {"EfuseBufferMode", "efusebufmode", {0}, hooker, "0"},
     {"E2pAccessMode", "e2paccmode", {0}, hooker, "2"},
+    {"RadioOn", "radio", {0}, hooker, "1"},
     {"BW_Enable", "bw_enable", {0}, hooker, "0"},
     {"BW_Root", "bw_root", {0}, hooker, "0"},
     {"BW_Priority", "bw_priority", {0}, hooker, NULL},
@@ -634,6 +637,10 @@ void parse_uci(char * arg)
             PARSE_UCI_OPTION(wifi_cfg[cur_dev].vifs[cur_vif].ssid, value);
             PARSE_UCI_OPTION(wifi_cfg[cur_dev].vifs[cur_vif].hidden, value);
             PARSE_UCI_OPTION(wifi_cfg[cur_dev].vifs[cur_vif].key, value);
+            PARSE_UCI_OPTION(wifi_cfg[cur_dev].vifs[cur_vif].wepkey[0], value);
+            PARSE_UCI_OPTION(wifi_cfg[cur_dev].vifs[cur_vif].wepkey[1], value);
+            PARSE_UCI_OPTION(wifi_cfg[cur_dev].vifs[cur_vif].wepkey[2], value);
+            PARSE_UCI_OPTION(wifi_cfg[cur_dev].vifs[cur_vif].wepkey[3], value);
             PARSE_UCI_OPTION(wifi_cfg[cur_dev].vifs[cur_vif].auth_server, value);
             PARSE_UCI_OPTION(wifi_cfg[cur_dev].vifs[cur_vif].auth_port, value);
             PARSE_UCI_OPTION(wifi_cfg[cur_dev].vifs[cur_vif].auth_secret, value);
@@ -869,10 +876,10 @@ void hooker(FILE * fp, param * p, const char * devname)
     }
     else if(0 == strcmp(p->dat_key, "AutoChannelSelect"))
     {
-        if(0 == strcmp(p->value, "2"))
-            FPRINT(fp, p, "2");
-        else
+        if(0 == strcmp(p->value, "0"))
             FPRINT(fp, p, "0");
+        else
+            FPRINT(fp, p, "2");
     }
     else if(0 == strcmp(p->dat_key, "HT_BW"))
     {
@@ -883,7 +890,7 @@ void hooker(FILE * fp, param * p, const char * devname)
     }
     else if(0 == strcmp(p->dat_key, "VHT_BW"))
     {
-        if(0 == strcmp(p->value, "2"))
+        if(0 == strcmp(p->value, "1"))
             FPRINT(fp, p, "1");
         else
             FPRINT(fp, p, "0");
@@ -896,7 +903,11 @@ void hooker(FILE * fp, param * p, const char * devname)
             printf("%s() array index error, L%d\n", __FUNCTION__, __LINE__);
             return;
         }
-        FPRINT(fp, p, "%s", wifi_cfg[N].vifs[i].key.value);
+		if (0 == strcasecmp(wifi_cfg[N].vifs[i].authmode.value, "psk")
+			|| 0 == strcasecmp(wifi_cfg[N].vifs[i].authmode.value, "psk2")
+			|| 0 == strcasecmp(wifi_cfg[N].vifs[i].authmode.value, "psk+psk2")
+			|| 0 == strcasecmp(wifi_cfg[N].vifs[i].authmode.value, "psk-mixed"))
+        	FPRINT(fp, p, "%s", wifi_cfg[N].vifs[i].key.value);
     }
     else if(0 == strcmp(p->dat_key, "RADIUS_Server"))
     {
@@ -962,19 +973,51 @@ void hooker(FILE * fp, param * p, const char * devname)
                 FPRINT(fp, p, "%s", "1");
         }
     }
+    else if(0 == strmatch(p->dat_key, "DefaultKeyID"))  /* WEP */
+    {
+    	for(i=0; i<wifi_cfg[N].vifnum; i++)
+        {
+	    	if (0 == strcasecmp(wifi_cfg[N].vifs[i].authmode.value, "wep-open")
+				|| 0 == strcasecmp(wifi_cfg[N].vifs[i].authmode.value, "wep-shared"))
+			{
+		            FPRINT(fp, p, "%s;", wifi_cfg[N].vifs[i].key.value);
+			}
+			else 
+				FPRINT(fp, p, "%s;", "2");//default value
+		}
+    }
 #if 0
     else if(0 == strmatch(p->dat_key, "Key?Type"))  /* WEP */
     {
-        i = atoi(p->dat_key+3)-1;
-        /* TODO */
+        /* TODO: do we need to support byte sequence?  */
+        FPRINT(fp, p, "%s", "0");
+    }
+#endif
+    else if(0 == strmatch(p->dat_key, "Key?Type"))  /* WEP */
+    {
+	int j;
+	i = atoi(p->dat_key+3)-1;
+	for(j=0; j<wifi_cfg[N].vifnum; j++)
+	{
+		if(0 == strncmp("s:", wifi_cfg[N].vifs[j].wepkey[i].value, 2))
+			strcpy(wifi_cfg[N].vifs[j].wepkey[i].value,wifi_cfg[N].vifs[j].wepkey[i].value+2);
+		if( 5 == strlen(wifi_cfg[N].vifs[j].wepkey[i].value) || 13 == strlen(wifi_cfg[N].vifs[j].wepkey[i].value))
+			FPRINT(fp, p, "%s;", "1");//wep key type is asic
+		else
+			FPRINT(fp, p, "%s;", "0");//wep key type is hex
+	}
     }
     else if(0 == strmatch(p->dat_key, "Key?Str?"))  /* WEP */
     {
         int j;
         i = atoi(p->dat_key+3)-1;
         j = atoi(p->dat_key+7)-1;
-        /* TODO */
+        if(0 == strncmp("s:", wifi_cfg[N].vifs[j].wepkey[i].value, 2))
+            FPRINT(fp, p, "%s", wifi_cfg[N].vifs[j].wepkey[i].value+2);
+        else
+            FPRINT(fp, p, "%s", wifi_cfg[N].vifs[j].wepkey[i].value);
     }
+#if 0
     else if(0 == strmatch(p->dat_key, "ApCliKey?Type"))  /* Ap Client Mode */
     {
         i = atoi(p->dat_key+8)-1;
@@ -1032,10 +1075,10 @@ void gen_dat(char * devname, char * datpath)
     }
     else
     {
-        snprintf(buffer, sizeof(buffer), "mkdir -p /etc/Wireless/%s", cfg->devname);
+        snprintf(buffer, sizeof(buffer), "mkdir -p /etc/wireless/%s", cfg->devname);
         system(buffer);
 
-        snprintf(buffer, sizeof(buffer), "/etc/Wireless/%s/%s.dat", cfg->devname, cfg->devname);
+        snprintf(buffer, sizeof(buffer), "/etc/wireless/%s/%s.dat", cfg->devname, cfg->devname);
         // snprintf(buffer, sizeof(buffer), "/%s.dat", cfg->devname); //test only
         fp = fopen(buffer, "wb");
     }
@@ -1242,7 +1285,7 @@ int main(int argc, char ** argv)
                     *p=0;    // trim newline
                     p++;
                 }
-                snprintf(profile, sizeof(profile), "/etc/Wireless/%s/%s.dat", device, device);
+                snprintf(profile, sizeof(profile), "/etc/wireless/%s/%s.dat", device, device);
                 parse_dat(device, profile);
             }
             else

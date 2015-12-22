@@ -259,13 +259,10 @@
                                         <span class="sp-l">WIFI名称</span>
                                         <span class="sp-r"><label class="noinpt" id="wf_name">CYWiFi</label></span>
                                     </li>
-                                    <li id="enter_pwd" class="hide">
-                                        <span class="sp-l">WIFI密码</span>
-                                        <span class="sp-r new-sp">
-                                            <label for="wf_pwd">请输入WIFI密码</label>
-                                            <input type="text" name="wf_pwd" class="inpt" id="wf_pwd" autocomplete="off">
-                                        </span>
-                                    </li>
+                                    <li>
+                                        <span class="sp-l">连接状态</span>
+                                        <span class="sp-r"><label class="noinpt" id="noinpt" style="color:#e4007f;">未中继</label></span>
+                                    </li> 
                                 </ul>
                                 <div class="bot wifi">
                                     <a href="javascript:;" class="ssid_add">添加隐藏网络</a>
@@ -276,7 +273,6 @@
                                 <table width="100%" cellpadding="0" cellspacing="0">
                                     <thead>
                                         <tr>
-                                            <td>选择</td>
                                             <td>WiFi名称</td>
                                             <td>MAC地址</td>
                                             <td>信道</td>
@@ -288,30 +284,14 @@
                                 <div class="getWifiList">
                                     <table width="100%" cellpadding="0" cellspacing="0">
                                         <tbody id="getWifiList">
-                                            <tr>
-                                                <td><input channel="1" sec="NONE" type="radio" name="wifiRadio" value="B-LINK_89EDA6"></td>
-                                                <td title="B-LINK_89EDA6">B-LINK_89EDA6</td>
-                                                <td>20:F4:1B:89:ED:A6</td>
-                                                <td>1</td>
-                                                <td>NONE</td>
-                                                <td><div class="lvl lvl-1"></div></td>
-                                            </tr>
-                                            <tr>
-                                                <td><input channel="1" sec="WPA1PSKWPA2PSK/AES" type="radio" name="wifiRadio" value="CYWIFI"></td>
-                                                <td title="CYWIFI">CYWIFI</td>
-                                                <td>6C:59:40:45:96:6E</td>
-                                                <td>1</td>
-                                                <td>WPA1PSKWPA2PSK/AES</td>
-                                                <td><div class="lvl lvl-1"><i class="lock"></i></div></td>
-                                            </tr>
                                         </tbody>
 
                                     </table>
                                 </div>                                
                                 <div class="btn-box">
-                                    <input type="hidden" id="security">
-                                    <input type="hidden" id="channel">
-                                    <input type="button" class="btn" id="btn_4" value="连 接">
+                                    <!--                                    <input type="hidden" id="security">-->
+                                    <!--                                    <input type="hidden" id="channel">-->
+                                    <!--                                    <input type="button" class="btn" id="btn_4" value="连 接">-->
                                 </div>
                             </div>
                         </div>
@@ -399,7 +379,30 @@
             </div>
         </div>
         <!-- 添加隐藏ssid end-->
-        <input type="hidden" id="succ_status" value="">
+        <!-- 无线中继 -->
+        <div class="wifiConnectLayer" id="wifi_zj">
+            <div class="bg"></div>
+            <div class="con">
+                <p id="cyname"></p>
+                <ul class="list" id="have_pwd">
+                    <li>
+                        <span class="sp-l">无线密码</span>
+                        <span class="sp-r">
+                            <label for="wf_pwd">请输入无线密码</label>
+                            <input type="text" name="wf_pwd" class="inpt" id="wf_pwd" autocomplete="off">
+                        </span>
+                    </li>
+                </ul>
+                <div class="box">
+                    <input type="hidden" id="channel">
+                    <input type="hidden" id="data_sec">
+                    <a href="javascript:;" class="btn s-btn" id="wifi_zj_confirm">连接</a>
+                    <a href="javascript:;" class="btn s-btn cannel">取消</a>
+                </div>
+            </div>
+        </div>
+        <!-- 无线中继 end-->
+
     </body>
 </html>
 <script type="text/javascript">

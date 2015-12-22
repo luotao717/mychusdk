@@ -54,6 +54,7 @@ enum {
 	CT_TCP_MID_BIT, /* in the middle of tcp */
 	CT_LOCAL_BIT,
 	CT_HTTP_REPLY_BIT,
+	CT_DNS_CN_BIT,
 	CT_MATCH_FLAGS_MASK = (0x1 << CT_MATCH_MAX_BIT) - 1,
 };
 
@@ -81,8 +82,8 @@ struct igd_url {
 	u32 rep_last_seq;
 	void *rule;
 	void *data;
-	int mid;
-	int data_len;
+	uint16_t mid;
+	uint16_t data_len;
 };
 
 struct igd_nf_conn {

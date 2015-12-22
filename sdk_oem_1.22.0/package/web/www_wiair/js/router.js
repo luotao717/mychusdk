@@ -1,7 +1,7 @@
 /* router.js */
-$(function() {
+$(function () {
     /*************** 首页 **********************/
-    $("#login_pwd").keyup(function(event) {
+    $("#login_pwd").keyup(function (event) {
         e = event ? event : (window.event ? window.event : null);
         if (e.keyCode == 13) {
             userLogin();
@@ -11,7 +11,7 @@ $(function() {
 
 
 
-    $("#btn").click(function() {
+    $("#btn").click(function () {
         var loadingLay = layer.open({
             type: 1,
             title: false,
@@ -21,7 +21,7 @@ $(function() {
             content: '<div class="loading"><p><img src="images/loading-1.gif" width="120"></p><p>正在检测上网方式...</p></div>',
             skin: 'cy-class'
         });
-        setTimeout(function() {
+        setTimeout(function () {
             layer.close(loadingLay);
             //window.location.href = "internetType.html";
             /*未插网线*/
@@ -38,7 +38,7 @@ $(function() {
         }, 2000)
     })
     //重新检测
-    $(".img2").click(function() {
+    $(".img2").click(function () {
         layer.closeAll();
         var loadingLay2 = layer.open({
             type: 1,
@@ -49,7 +49,7 @@ $(function() {
             content: '<div class="loading"><p><img src="images/loading-1.gif" width="120"></p><p>正在检测上网方式...</p></div>',
             skin: 'cy-class'
         });
-        setTimeout(function() {
+        setTimeout(function () {
             layer.close(loadingLay2);
             //window.location.href = "internetType.html";
             /*未插网线*/
@@ -69,7 +69,7 @@ $(function() {
 
     /*************** internetType **********************/
     //tab 切换
-    $(".nav a").click(function() {
+    $(".nav a").click(function () {
         $(this).addClass("selected").siblings("a").removeClass("selected");
         var id = $(this).attr("data-id");
         $("#" + id + "_box").show().siblings(".sub-box").hide();
@@ -78,20 +78,20 @@ $(function() {
         }
     })
     //输入框焦点
-    $(".inpt").focusin(function() {
+    $(".inpt").focusin(function () {
         $(this).siblings("label").hide();
-    }).focusout(function() {
+    }).focusout(function () {
         if ($(this).val() == '') {
             $(this).siblings("label").show();
         }
     })
     //取消按钮
-    $(".cannel").live("click", function() {
+    $(".cannel").live("click", function () {
         layer.closeAll();
     })
 
     //克隆mac地址
-    $(".mac_copy").click(function() {
+    $(".mac_copy").click(function () {
         layer.open({
             type: 1,
             title: false,
@@ -115,7 +115,7 @@ $(function() {
 //    });
 
     //wifi连接
-    $("#wifi_box li").live("click", function() {
+    $("#wifi_box li").live("click", function () {
         var name = $(this).attr('ssid');
         $("#cyname").text(name);
         $("#wifi_pwd").val('');
@@ -146,7 +146,7 @@ $(function() {
         }
     });
 
-    $("#connect").live("click", function() {
+    $("#connect").live("click", function () {
         var channel = $("#channel").val();
         var name = $("#cyname").text();
         var wifi_pwd = $("#wifi_pwd").val();
@@ -180,7 +180,7 @@ $(function() {
 
 
     //添加隐藏ssid
-    $("#ssid_add").live("click", function() {
+    $("#ssid_add").live("click", function () {
         layer.open({
             type: 1,
             title: false,
@@ -192,7 +192,7 @@ $(function() {
     })
 
     //确认 添加隐藏ssid
-    $("#ssid_confirm").click(function() {
+    $("#ssid_confirm").click(function () {
         var ssid = $("#ssid").val();
         var pwd = $("#ssid_pwd").val();
         var mac = $('#wisp_mac_inpt').val();
@@ -238,7 +238,7 @@ $(function() {
         connectWisp(ssid, pwd, mac, channel, check_wpa);
     })
 
-    $("#check_wpa").live("change", function() {
+    $("#check_wpa").live("change", function () {
         if ($(this).val() == 1) {
             $("#pwd_li").addClass("hide");
         } else {
@@ -251,7 +251,7 @@ $(function() {
 
     /*************** getAccountInfo **********************/
     //获取宽带帐号密码
-    $("#goGet").click(function() {
+    $("#goGet").click(function () {
         layer.open({
             type: 1,
             title: false,
@@ -262,11 +262,11 @@ $(function() {
         });
     })
     //取消按钮
-    $("#cannel").click(function() {
+    $("#cannel").click(function () {
         layer.closeAll();
     })
 
-    $("#net_work").click(function() {
+    $("#net_work").click(function () {
         var account = $("#account_get").text();
         var pwd = $("#pwd_get").text();
         var url = document.URL;
@@ -279,8 +279,8 @@ $(function() {
 
     /*************** getAccountInfo end**********************/
 
-    $('#PpoeHightSet').click(function() {
-        $("#t_1_box ul").find('li').each(function(index) {
+    $('#PpoeHightSet').click(function () {
+        $("#t_1_box ul").find('li').each(function (index) {
             if (index > 1) {
                 if ($(this).is(':visible') == false) {
                     $(this).show();
@@ -288,14 +288,19 @@ $(function() {
                 } else {
                     $(this).hide();
                     $(this).find('input').val('').siblings("label").show();
+                    $(this).find('select').val(3);
+                    $(this).find("option:selected").text('出厂MAC');
+                    if ($(this).find("span").length == 3) {
+                        $(this).find("span").last().hide();
+                    }
                     $("#PpoeHightSet").text('高级配置');
                 }
             }
         });
     })
 
-    $('#StaticHightSet').click(function() {
-        $("#t_2_box ul").find('li').each(function(index) {
+    $('#StaticHightSet').click(function () {
+        $("#t_2_box ul").find('li').each(function (index) {
             if (index > 2) {
                 if ($(this).is(':visible') == false) {
                     $(this).show();
@@ -303,20 +308,30 @@ $(function() {
                 } else {
                     $(this).hide();
                     $(this).find('input').val('').siblings("label").show();
+                    $(this).find('select').val(3);
+                    $(this).find("option:selected").text('出厂MAC');
+                    if ($(this).find("span").length == 3) {
+                        $(this).find("span").last().hide();
+                    }
                     $("#StaticHightSet").text('高级配置');
                 }
             }
         });
     })
 
-    $('#DhcpHightSet').click(function() {
-        $("#t_3_box ul").find('li').each(function(index) {
+    $('#DhcpHightSet').click(function () {
+        $("#t_3_box ul").find('li').each(function (index) {
             if ($(this).is(':visible') == false) {
                 $(this).show();
                 $("#DhcpHightSet").text('简单配置');
             } else {
                 $(this).hide();
                 $(this).find('input').val('').siblings("label").show();
+                $(this).find('select').val(3);
+                $(this).find("option:selected").text('出厂MAC');
+                if ($(this).find("span").length == 3) {
+                    $(this).find("span").last().hide();
+                }
                 $("#DhcpHightSet").text('高级配置');
             }
         });

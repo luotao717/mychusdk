@@ -100,6 +100,12 @@ extern int		ip_mr_input(struct sk_buff *skb);
 extern int		ip_output(struct sk_buff *skb);
 #ifdef CONFIG_NF_IGD
 extern int ip_finish_output(struct sk_buff *skb);
+extern int ip_rcv_finish(struct sk_buff *skb);
+unsigned int nf_nat_in(unsigned int hooknum,
+	  struct sk_buff *skb,
+	  const struct net_device *in,
+	  const struct net_device *out,
+	  int (*okfn)(struct sk_buff *));
 #endif
 extern int		ip_mc_output(struct sk_buff *skb);
 extern int		ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *));

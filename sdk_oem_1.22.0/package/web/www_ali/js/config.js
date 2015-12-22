@@ -26,6 +26,8 @@ var isConnected = false;
 var responseReason = 0;
 var userLoginStatus = false;
 var surl = document.URL;
+var first_status;
+
 /*
  * 设置PPPOE账号密码
  */
@@ -47,7 +49,7 @@ function setPPPOE(account, passwd, mac, mtu, dns, dns1, clone) {
             type: "POST",
             url: actionUrl + data + "&math=" + Math.random(),
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 var jsonObject = data;
                 if (jsonObject.error == 0) {
                     currentMode = 2;
@@ -58,7 +60,7 @@ function setPPPOE(account, passwd, mac, mtu, dns, dns1, clone) {
                     $("#btn_1").val("开始拨号");
                     return;
                 }
-            }, error: function() {
+            }, error: function () {
                 getMsg('拨号超时,请重新连接路由器！');
                 return;
             }
@@ -95,7 +97,7 @@ function setDHCP(mac, mtu, dns, dns1, clone) {
             type: "POST",
             url: actionUrl + data + "&math=" + Math.random(),
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 var jsonObject = data;
                 if (jsonObject.error == 0) {
                     currentMode = 1;
@@ -106,7 +108,7 @@ function setDHCP(mac, mtu, dns, dns1, clone) {
                     $("#btn_3").val("重新启用");
                     return;
                 }
-            }, error: function() {
+            }, error: function () {
                 getMsg('动态IP配置超时,请重新连接路由器！');
                 return;
             }
@@ -143,7 +145,7 @@ function setStatic(ip, mask, gw, dns, dns1, mac, mtu, clone) {
             type: "POST",
             url: actionUrl + data + "&math=" + Math.random(),
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 var jsonObject = data;
                 if (jsonObject.error == 0) {
                     currentMode = 3;
@@ -154,7 +156,7 @@ function setStatic(ip, mask, gw, dns, dns1, mac, mtu, clone) {
                     $("#btn_2").val("重新确认");
                     return;
                 }
-            }, error: function() {
+            }, error: function () {
                 getMsg('静态IP配置超时,请重新连接路由器！');
                 return;
             }
@@ -176,14 +178,19 @@ function getWifiList() {
         getWanInfoJsonObject();
     }
 
-    var conn_ssid = wanConfigJsonObject.ssid;
+    if (wanInfoJsonObject.connected == 1 && wanInfoJsonObject.mode == 4) {
+        $("#wf_name").text(wanConfigJsonObject.ssid);
+        $("#noinpt").text("已连接");
+    } else {
+        $("#wf_name").text('请选择');
+    }
     loading(1, '正在加载...');
     $.ajax({
         type: 'POST',
         url: actionUrl,
         data: "fname=net&opt=ap_list&function=get" + "&math=" + Math.random(),
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             var jsonWifiListObject = data;
             if (jsonWifiListObject.error == 0) {
                 var aplist = jsonWifiListObject.aplist;
@@ -216,21 +223,15 @@ function getWifiList() {
                         }
                         if (aplist[i].ssid.length > 1) {
                             if (mob == 1) {
-                                list = "<tr><td width='70'><input channel=" + aplist[i].channel + " sec=" + aplist[i].security + " type='radio' name='wifiRadio' value=" + aplist[i].ssid + "></td><td width='143' title=" + aplist[i].ssid + ">" + data_ssid[i] + "</td><td>" + aplist[i].security_lock + "</td></tr>";
+                                list = "<tr style='cursor: pointer' ssid=" + aplist[i].ssid + " channel=" + aplist[i].channel + " sec=" + aplist[i].security + "><td width='143' title=" + aplist[i].ssid + ">" + data_ssid[i] + "</td><td>" + aplist[i].security_lock + "</td></tr>";
                             } else {
-                                list = "<tr><td width='70'><input channel=" + aplist[i].channel + " sec=" + aplist[i].security + " type='radio' name='wifiRadio' value=" + aplist[i].ssid + "></td><td width='143' title=" + aplist[i].ssid + ">" + data_ssid[i] + "</td><td width='170'>" + aplist[i].bssid.toUpperCase() + "</td><td width='40'>" + aplist[i].channel + "</td><td width='230'>" + aplist[i].security + "</td><td>" + aplist[i].security_lock + "</td></tr>";
+                                list = "<tr style='cursor: pointer' ssid=" + aplist[i].ssid + " channel=" + aplist[i].channel + " sec=" + aplist[i].security + "><td width='143' title=" + aplist[i].ssid + ">" + data_ssid[i] + "</td><td width='170'>" + aplist[i].bssid.toUpperCase() + "</td><td width='40'>" + aplist[i].channel + "</td><td width='230'>" + aplist[i].security + "</td><td>" + aplist[i].security_lock + "</td></tr>";
                             }
                             wifi += list;
                         }
                     }
                 }
                 layer.closeAll();
-                if (wanInfoJsonObject.connected == 1 && wanInfoJsonObject.mode == 4) {
-                    $("#wf_name").text(conn_ssid);
-                    $("#noinpt").text("已连接");
-                } else {
-                    $("#wf_name").text('请选择');
-                }
                 $("#getWifiList").empty().html(wifi);
             } else {
                 layer.closeAll();
@@ -284,7 +285,7 @@ function connectWisp(ssid, pwd, mac, channel, sec) {
             type: "POST",
             url: actionUrl + dat + "&math=" + Math.random(),
             dataType: "JSON",
-            success: function(data) {
+            success: function (data) {
                 if (data.error == 0) {
                     currentMode = 4;
                     loading(1, '正在连接...');
@@ -292,11 +293,12 @@ function connectWisp(ssid, pwd, mac, channel, sec) {
                         type: "POST",
                         url: actionUrl + dat2,
                         dataType: "JSON",
-                        success: function(jsonWisp) {
+                        success: function (jsonWisp) {
                             if (jsonWisp.error == 0) {
                                 intervalTime(4, '中继', '中继', jsonWisp.mode);
                             } else {
                                 getMsg('连接超时！');
+                                $("#noinpt").text('中继失败');
                                 layer.closeAll();
                             }
                         }
@@ -311,7 +313,7 @@ function connectWisp(ssid, pwd, mac, channel, sec) {
             intervalTime(4, '中继', '中继', 4);
         } else if (wanInfoJsonObject.connected == 1 && wanInfoJsonObject.mode == 4) {
             getMsg("当前WIFI已中继成功！");
-            setTimeout(function() {
+            setTimeout(function () {
                 SuccessUrl();
             }, 3000);
         }
@@ -328,7 +330,7 @@ function getWanConfigJsonObject() {
         url: actionUrl + "fname=net&opt=wan_conf&function=get&math=" + Math.random(),
         async: false,
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 wanConfigJsonObject = jsonObject;
@@ -336,13 +338,13 @@ function getWanConfigJsonObject() {
                 locationUrl(data.error);
                 return;
             }
-        }, complete: function(XHR, TS) {
+        }, complete: function (XHR, TS) {
             XHR = null;
         },
-        error: function(XHRequest, status, data) {
+        error: function (XHRequest, status, data) {
+            getMsg('请重新连接路由器！');
+            layer.closeAll();
             XHRequest.abort();
-            clearPlotChart(g_typePlot);
-            typeChartTimer();
         }
     });
 }
@@ -353,7 +355,7 @@ function getDeviceCheck() {
         url: actionUrl + "fname=system&opt=device_check&function=get&math=" + Math.random(),
         async: false,
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 deviceJsonObject = data;
             } else {
@@ -373,7 +375,7 @@ function getWanInfoJsonObject() {
         url: actionUrl + "fname=net&opt=wan_info&function=get&math=" + Math.random(),
         async: false,
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 wanInfoJsonObject = jsonObject;
@@ -386,13 +388,13 @@ function getWanInfoJsonObject() {
                 locationUrl(data.error);
                 return;
             }
-        }, complete: function(XHR, TS) {
+        }, complete: function (XHR, TS) {
             XHR = null;
         },
-        error: function(XHRequest, status, data) {
+        error: function (XHRequest, status, data) {
+            getMsg('请重新连接路由器！');
+            layer.closeAll();
             XHRequest.abort();
-            clearPlotChart(g_typePlot);
-            typeChartTimer();
         }
     });
 }
@@ -405,7 +407,7 @@ function checkWanDetectLink() {
         type: "POST",
         url: actionUrl + "fname=net&opt=wan_detect&function=get&math=" + Math.random(),
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.wan_link == 1) {
                 clearInterval(checkWanDetectLinkInterval);
@@ -433,17 +435,17 @@ function checkWanDetect(type) {
         type: "POST",
         url: actionUrl + "fname=net&opt=wan_detect&function=get&math=" + Math.random(),
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 if (jsonObject.wan_link == 0 && type < 1) {
-                    checkWanDetectLinkInterval = setInterval(function() {
+                    checkWanDetectLinkInterval = setInterval(function () {
                         checkWanDetectLink();
                     }, 2000);
                 } else {
                     layer.closeAll();
                     clearInterval(checkWanDetectLinkInterval);
-                    if (jsonObject.connected == 0) {
+                    if (jsonObject.connected == 0 || wanInfoJsonObject.connected == 0) {
                         if (type > 0) {
                             netTypeChoice(type);
                         } else {
@@ -469,7 +471,7 @@ function userLogin(str) {
         type: "POST",
         url: actionUrl + "fname=system&opt=login&function=set&usrid=" + str_md5 + "&math=" + Math.random(),
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 $.cookie('lstatus', true);
                 checkConfig();
@@ -482,6 +484,12 @@ function userLogin(str) {
                 $("#user_login").text('重新登录');
                 $("#user_login").attr("disabled", false);
             }
+        }, complete: function (XHR, TS) {
+            XHR = null;
+        },
+        error: function (XHRequest, status, data) {
+            getMsg(XHRequest.status);
+            XHRequest.abort();
         }
     });
 }
@@ -495,7 +503,7 @@ function setLedOnOff(act, val) {
         type: "POST",
         url: actionUrl + dat + "&math=" + Math.random(),
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 if (act == 'set') {
                     getMsg('设置成功！');
@@ -528,14 +536,14 @@ function wifiGet() {
         type: "POST",
         url: actionUrl + "fname=&opt=wifi_lt&function=get&math=" + Math.random(),
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 router.getWifiAp();
                 $("#startHour option[value=" + data.sh + "]").attr('selected', 'selected');
                 $("#startMin option[value=" + data.sm + "]").attr('selected', 'selected');
                 $("#endHour option[value=" + data.eh + "]").attr('selected', 'selected');
                 $("#endMin option[value=" + data.em + "]").attr('selected', 'selected');
-                $("input[name=day]").each(function(index) {
+                $("input[name=day]").each(function (index) {
                     for (var i = 0; i <= data.week.length; i++) {
                         if (index == data.week[i]) {
                             $(this).attr("checked", true);
@@ -574,7 +582,7 @@ function wifiSet(enable, time_on, week, sh, sm, eh, em) {
         type: "POST",
         url: actionUrl + "fname=net&opt=wifi_lt&function=set&enable=" + enable + "&time_on=" + time_on + "&week=" + week + "&sh=" + sh + "&sm=" + sm + "&eh=" + eh + "&em=" + em + "&math=" + Math.random(),
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 if (enable == 0) {
                     $("#swichDiv").hide();
@@ -596,7 +604,7 @@ function wifiTxrateGet(act, rate) {
         type: "POST",
         url: actionUrl + dat + "&math=" + Math.random(),
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 if (rate > 0) {
                     getMsg('设置成功！');
@@ -635,7 +643,7 @@ function wifiGuestGet(act, status) {
         type: "POST",
         url: actionUrl + dat,
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 if (act == 'get' && data.enable == 1) {
                     $("#guest_on").addClass('selected');
@@ -677,7 +685,7 @@ function hostNatList(fc, mac, act, out_port, in_port, proto, enable, tr) {
         type: "POST",
         url: actionUrl + dat,
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 var html = '';
                 if (fc == 'get') {
@@ -715,7 +723,7 @@ function routerRestart(act) {
         type: "POST",
         url: actionUrl + "fname=system&opt=setting&action=" + act + "&function=set",
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 var content = '';
                 if (act == 'reboot') {
@@ -732,6 +740,10 @@ function routerRestart(act) {
 }
 
 function checkConfig() {
+    checkFirst();
+    if (first_status === 0) {
+        $.cookie('lstatus', true);
+    }
     if ($.cookie('lstatus') == 'true') {
         loading(1, '正在检测上网方式...');
         getWanConfigJsonObject();
@@ -756,7 +768,7 @@ function checkConfig() {
             } else {  //已配置
                 isConfiged = true;
                 if (wanInfoJsonObject.link == 0) {
-                    checkWanDetectLinkInterval = setInterval(function() {
+                    checkWanDetectLinkInterval = setInterval(function () {
                         checkWanDetectLink();
                     }, 2000);
                 } else if (wanInfoJsonObject.connected == 0) {
@@ -808,14 +820,14 @@ function getPPPOEAccount() {
         type: "POST",
         url: actionUrl + "fname=net&opt=wan_account&function=set",
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 $.ajax({
                     type: "POST",
                     url: actionUrl + "fname=net&opt=wan_account&function=get",
                     dataType: "json",
-                    success: function(data) {
+                    success: function (data) {
                         var jsonObject = data;
                         if (jsonObject.error == 0) {
                             layer.closeAll();
@@ -823,7 +835,7 @@ function getPPPOEAccount() {
                             $('#account_get').empty().text(jsonObject.account);
                             $('#pwd_get').empty().text(jsonObject.passwd);
                         } else {
-                            interval = setInterval(function() {
+                            interval = setInterval(function () {
                                 if (timeout > timeoutCount - 1) {
                                     timeout = 0;
                                     $(".dot").show();
@@ -838,7 +850,7 @@ function getPPPOEAccount() {
                                     $(".d2").delay(400).fadeIn();
                                     $(".d3").delay(700).fadeIn();
                                     if (timeout != 0) {
-                                        setTimeout(function() {
+                                        setTimeout(function () {
                                             $(".dot").fadeOut();
                                         }, 1200);
                                     }
@@ -861,7 +873,7 @@ function getAccountTimer() {
         type: "POST",
         url: actionUrl + "fname=net&opt=wan_account&function=get",
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 clearInterval(interval);
@@ -878,7 +890,7 @@ function getAccountTimer() {
 
 function intervalTime(btn, btnText, msgText, mode) {
     responseReason = 0;
-    interval = setInterval(function() {
+    interval = setInterval(function () {
         getWanInfoJsonObject();
         if ((wanInfoJsonObject.link == 0 && mode != 4) || responseReason == 19) {
             timeout = 15;
@@ -924,7 +936,7 @@ function checkVersion() {
         type: "POST",
         url: actionUrl + "fname=system&opt=firmstatus&function=get",
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 if (jsonObject.status == 0) {
@@ -961,7 +973,7 @@ function getGradeStatus() {
         type: "POST",
         url: actionUrl + "fname=system&opt=firmstatus&function=set&flag=get&math=" + Math.random(),
         dataType: "JSON",
-        success: function(doStatus) {
+        success: function (doStatus) {
             if (doStatus.error == 0) {
                 layer.open({
                     type: 1,
@@ -974,7 +986,7 @@ function getGradeStatus() {
                 var ProgressBar = {
                     maxValue: 100,
                     value: 0,
-                    SetValue: function(aValue) {
+                    SetValue: function (aValue) {
                         this.value = aValue;
                         if (this.value >= this.maxValue)
                             this.value = this.maxValue;
@@ -989,12 +1001,12 @@ function getGradeStatus() {
                 ProgressBar.maxValue = 100;
 //                        设置当前刻度
                 var index = 0;
-                var mProgressTimer = window.setInterval(function() {
+                var mProgressTimer = window.setInterval(function () {
                     $.ajax({
                         type: "POST",
                         url: actionUrl + "fname=system&opt=firmstatus&function=get",
                         dataType: "JSON",
-                        success: function(jsonDoad) {
+                        success: function (jsonDoad) {
                             if (jsonDoad.error == 0) {
                                 index = ((jsonDoad.curl / jsonDoad.total) * 100).toFixed(2);
                                 ProgressBar.SetValue(index);
@@ -1020,7 +1032,7 @@ function up_Wrap() {
         type: "POST",
         url: actionUrl + "fname=system&opt=firmup&function=set",
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 $("#update_1").val("正在升级...");
@@ -1049,7 +1061,7 @@ function setUpgrade() {
         url: actionUrl + "fname=system&opt=local_firmup&function=set",
         async: false,
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 document.getElementById("_submit").value = "升级中...";
@@ -1088,7 +1100,7 @@ function uploadFile() {
                 document.getElementById("msg").innerHTML = "正在上传，请稍候...";
                 document.getElementById("form1").action = "/upload.csp?uploadpath=/tmp/ioos&t=firmware.bin";
                 document.getElementById("form1").submit();
-                interval = setInterval(function() {
+                interval = setInterval(function () {
                     if (timeout > timeoutCount - 1) {
                         timeout = 0;
                         clearInterval(interval);
@@ -1115,7 +1127,7 @@ function upReady() {
         url: actionUrl + "fname=system&opt=up_ready&function=set&math=" + Math.random(),
         async: false,
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 status = 0;
@@ -1133,7 +1145,7 @@ function getResponseTimer() {
         type: "POST",
         url: actionUrl + "fname=net&opt=upload_status&function=get&math=" + Math.random(),
         dataType: "json",
-        success: function(data) {
+        success: function (data) {
             var jsonObject = data;
             if (jsonObject.error == 0) {
                 if (jsonObject.status == 1) {
@@ -1153,7 +1165,7 @@ var barWidth = 300;
 var barTimer = 500;
 if (syj == null)
     var syj = {};
-syj.ProgressBar = function(parent, width, barClass, display) {
+syj.ProgressBar = function (parent, width, barClass, display) {
     this.parent = parent;
     this.pixels = width;
     this.parent.innerHTML = "<div/>";
@@ -1167,7 +1179,7 @@ syj.ProgressBar = function(parent, width, barClass, display) {
     this.parent.style.display = display == false ? 'none' : 'block';
 }
 
-syj.ProgressBar.prototype.setPercent = function(pct) {
+syj.ProgressBar.prototype.setPercent = function (pct) {
     var fillPixels;
     if (pct < 0.99) {
         fillPixels = this.pixels * pct;
@@ -1185,7 +1197,7 @@ syj.ProgressBar.prototype.setPercent = function(pct) {
     this.fillDIV.style.width = fillPixels + "px";
 }
 
-syj.ProgressBar.prototype.display = function(v) {
+syj.ProgressBar.prototype.display = function (v) {
     this.parent.style.display = v == true ? 'block' : 'none';
 }
 
@@ -1224,7 +1236,7 @@ function getLanDHCP() {
         type: "POST",
         url: actionUrl + "fname=net&opt=dhcpd&function=get",
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 $("#lan_ip").val(data.ip).siblings("label").hide();
                 $("#lan_mask").val(data.mask).siblings("label").hide();
@@ -1246,7 +1258,7 @@ function setLanDHCP(ip, mask, start, end, enable, ipMark) {
         type: "POST",
         url: actionUrl + "fname=net&opt=dhcpd&function=set&start=" + start + "&end=" + end + "&mask=" + mask + "&ip=" + ip + "&enable=" + enable,
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error != 0) {
                 locationUrl(data.error);
                 $("#lan_btn").attr('disabled', false);
@@ -1267,10 +1279,10 @@ function setUserAccount(pwd) {
         type: "POST",
         url: actionUrl + "fname=system&opt=login_account&function=set&user=admin" + "&password=" + pwd,
         dataType: "JSON",
-        success: function(data) {
+        success: function (data) {
             if (data.error == 0) {
                 getMsg("修改成功,请用新密码重新登录！");
-                setTimeout(function() {
+                setTimeout(function () {
                     $.cookie('lstatus', false, {path: '/'});
                     document.location = 'http://' + document.domain + '/index.html?tt=' + new Date().getTime();
                 }, 3000);
@@ -1291,7 +1303,7 @@ function wifiGuestList(fun, mac, action) {
         type: "POST",
         url: actionUrl + data,
         dataType: "JSON",
-        success: function(json) {
+        success: function (json) {
             if (json.error == 0) {
                 if (mac != '' && fun == 'set') {
                     getMsg("设置成功！");
@@ -1334,7 +1346,7 @@ function GetProgressBar(text) {
     var ProgressBar = {
         maxValue: 100,
         value: 0,
-        SetValue: function(aValue) {
+        SetValue: function (aValue) {
             this.value = aValue;
             if (this.value >= this.maxValue)
                 this.value = this.maxValue;
@@ -1349,7 +1361,7 @@ function GetProgressBar(text) {
     ProgressBar.maxValue = 100;
     //设置当前刻度
     var index = 0;
-    var mProgressTimer = setInterval(function() {
+    var mProgressTimer = setInterval(function () {
         index += 0.83;
         if (index > 99) {
             window.clearInterval(mProgressTimer);
@@ -1358,7 +1370,7 @@ function GetProgressBar(text) {
         }
         ProgressBar.SetValue(index.toFixed(2));
     }, 1000);
-    setTimeout(function() {
+    setTimeout(function () {
         $.cookie('lstatus', false, {path: '/'});
         document.location = 'http://' + document.domain + '/index.html?tt=' + new Date().getTime();
     }, 120000);
@@ -1397,4 +1409,23 @@ function SuccessUrl() {
     } else {
         toSucssUrl();
     }
+}
+
+function checkFirst() {
+    $.ajax({
+        type: "POST",
+        url: actionUrl + "fname=system&opt=check_first&function=get",
+        dataType: "JSON",
+        async: false,
+        success: function (data) {
+            if (data.error == 0) {
+                first_status = 0;
+            }
+        }, complete: function (XHR, TS) {
+            XHR = null;
+        },
+        error: function (XHRequest, status, data) {
+            XHRequest.abort();
+        }
+    });
 }

@@ -14,13 +14,11 @@ wanpid=4
 reset=1
 vendor=$1
 product=$2
-lanip=192.168.1.1
+lanip=192.168.11.1
 domain=wiair.cc
 ssid=CYWiFi-
 firmware=/dev/mtd4
 www_dir=www_wiair
-export VENDOR=$vendor
-export PRODUCT=$product
 
 case "$vendor" in 
 	"BLINK")
@@ -40,6 +38,9 @@ case "$vendor" in
 	firmware=/dev/mtd5
 	;;
 esac
+
+export VENDOR=$vendor
+export PRODUCT=$product
 
 sed $file -e "
 	s/^VENDOR=.*/VENDOR=$vendor/g;
