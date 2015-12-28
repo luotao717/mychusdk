@@ -4,6 +4,7 @@ then
 	echo "run like:./make.sh BLINK O1"
 	echo "run like:./make.sh GAOKE O1"
 	echo "run like:./make.sh WIAIR I1"
+	echo "run like:./make.sh WIFIS 01"
 	exit -1
 fi
 
@@ -15,10 +16,14 @@ reset=1
 vendor=$1
 product=$2
 lanip=192.168.11.1
-domain=wiair.cc
-ssid=CYWiFi-
+domain=luot.cc
+ssid=SMARTWiFi-
 firmware=/dev/mtd4
 www_dir=www_wiair
+
+if [ "$vendor" == "WIFIS" ]; then
+		www_dir=www_ltpub
+fi
 
 case "$vendor" in 
 	"BLINK")

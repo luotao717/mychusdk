@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="Keywords" content="">
+        <meta name="Description" content="">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta http-equiv="Pragma" contect="no-cache">
+        <meta http-equiv="cache-control" content="no-cache">
+        <meta http-equiv="expires" content="0">
+
+        <title>路由设置</title>
+        <link rel="stylesheet" href="../css/base.css">
+        <link rel="stylesheet" href="../css/router.css">
+        <link rel="stylesheet" href="../css/jquery.mCustomScrollbar.css">
+        <script type="text/javascript" src="../js/jquery.js"></script>
+        <script type="text/javascript" src="../js/jquery.cookie.js"></script> 
+        <script type="text/javascript" src="../js/jquery.md5.js"></script> 
+        <script type="text/javascript" src="../js/common.js"></script>
+        <script type="text/javascript" src="../js/layer/layer.js"></script>
+        <script type="text/javascript" src="../js/user.js"></script>
+        <script type="text/javascript" src="../js/jquery.mCustomScrollbar.concat.min.js"></script>
+        <script>
+            if ($.cookie('lstatus') != 'true') {
+                $.cookie('lstatus', false, {path: '/'});
+                document.location = 'http://' + document.domain + "/index.html?tt=" + new Date().getTime();
+            }
+        </script>        
+        <!--[if IE 6]>
+            <style>
+            .menu{
+                            width:500px;
+                top:10px;
+                height:30px;
+                margin-top:0;
+                margin-left:-250px;
+                left:50%;
+            }
+            .menu a{padding:0;float:left;}
+            </style>
+            <script type="text/javascript" src="../js/DD_belatedPNG.min.js"></script>
+            <script type="text/javascript">
+            DD_belatedPNG.fix("img,.png_ie");
+            </script>
+        <![endif]-->
+        <!--[if IE 7]>
+            <script src="../js/respond.min.js"></script>
+        <![endif]-->
+        <!--[if IE 8]>
+            <script src="../js/respond.min.js"></script>
+        <![endif]-->
+    </head>
+
+    <body>
+        <div class="top">
+            <a href="index.html" class="logo-box"><img src="../images/logo.png" width="166"></a>
+            <a href="javascript:;" class="user" id="user">
+                <span>管理密码</span>
+                <span>
+                    <img src="../images/user.png">
+                    <!-- 未设置登录密码时显示-->
+                    <!--                    <i class="png_ie"></i>-->
+                    <!-- 未设置登录密码时显示 end-->
+                </span>
+            </a>
+        </div>
+        <div class="menu">
+            <a class="selected">我的路由<i class="png_ie i-1"></i></a>
+            <a>网络设置<i class="png_ie i-2"></i></a>
+            <a>无线设置<i class="png_ie i-5"></i></a>
+            <a>固件升级<i class="png_ie i-4"></i></a>
+        </div>
+        <div class="wrap userWrap">
+            <div class="version"><a href="version.html">版本号：<em id="version">获取中...</em></a></div>
+            <div class="bg-img"><img src="../images/bg-md.png"></div>
+            <div class="light l-1"><img src="../images/light.png"></div>
+            <div id="led_on_off">
+
+            </div>
+            <div class="panel panel_1">
+                <div class="imgBox"><img src="../images/bg-1.png"></div>
+                <div class="panel_con">
+                    <p>当前路由器状态</p>
+                    <h1 id="netStatus">获取中...</h1>
+                </div>
+            </div>
+
+            <div class="panel panel_2">
+                <div class="imgBox"><img src="../images/bg-2.png"></div>
+                <div class="panel_con">
+                    <p>本机IP地址</p>
+                    <h2 id="lanIP">获取中...</h2>
+                    <p>外网地址</p>
+                    <h2 id="wanIP">获取中...</h2>
+                </div>
+            </div>
+            <div class="panel panel_3">
+                <div class="imgBox"><img src="../images/bg-3.png"></div>
+                <div class="panel_con">
+                   
+                    <div class="erweima"></div>
+                </div>
+            </div>
+            <div class="panel panel_4">
+                <div class="imgBox"><img src="../images/bg-4.png"></div>
+                <div class="panel_con">
+                    <p>无线名称</p>
+                    <h3 id="wifi_name">获取中...</h3>
+                    <p>无线密码</p>
+                    <h3 id="wifi_password">获取中...</h3>
+                </div>
+            </div>
+            <div class="panel panel_5">
+                <div class="imgBox"><img src="../images/bg-5.png"></div>
+                <div class="panel_con">
+                    <p>
+                        <span class="fl">当前连接终端</span>
+                        <span class="fr">当前速度:</span>
+                    </p>
+                    <div class="client-list" id="client_list">
+                        <table width="100%" cellpadding="0" cellspacing="0" id="devices">
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel_6">
+                <div class="imgBox"><img src="../images/bg-6.png"></div>
+                <div class="list_con">
+                    <div class="list_box">
+                        <p>当前速度</p>
+                        <p class="detail" id="curSpeed">获取中...</p>
+                    </div>
+                    <div class="list_box r-list">
+                        <p>总宽带</p>
+                        <p class="detail" id="totalSpeed">获取中...</p>
+                    </div>
+                    <div class="list_box">
+                        <p>上网类型</p>
+                        <p class="detail" id="netType">获取中...</p>
+                    </div>
+                    <div class="list_box r-list">
+                        <p>MAC地址</p>
+                        <p class="detail" id="macTy">获取中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 无线设置 -->
+        <!--        <div class="wifiConnectLayer" id="wifi_set_layer">
+                    <div class="bg"></div>
+                    <div class="con con3">
+                        <p>无线设置</p>
+                        <ul class="list">
+                            <li>
+                                <span class="sp-l">无线名称</span>
+                                <span class="sp-r">
+                                    <label for="ssid">请输入无线名称</label>
+                                    <input type="text" name="ssid" class="inpt" id="ssid" autocomplete="off">
+                                </span>
+                            </li>
+                            <li>
+                                <span class="sp-l">无线密码</span>
+                                <span class="sp-r">
+                                    <label for="wifi_pwd">请输入无线密码</label>
+                                    <input type="password" name="wifi_pwd" class="inpt" id="wifi_pwd" autocomplete="off">
+                                </span>
+                            </li>
+                            <li class="change"><input class="chks" type="checkbox" id="hidden_ssid">隐藏无线名称</li>
+                        </ul>
+                        <div class="box">
+                            <a href="javascript:;" class="btn layer-btn cannel">取消</a>
+                            <a href="javascript:;" class="btn layer-btn" id="wifi_set_confirm">确认</a>
+                        </div>
+                    </div>
+                </div>-->
+        <div class="wifiConnectLayer" id="wifi_set_layer">
+            <div class="bg"></div>
+            <div class="con con3">
+                <div class="closebtn" id="close_btn">x</div>
+                <p>购物比价设置</p>
+                <p class="newtxt">逛京东、一号店等网站时，可以自动同款比价、展示180天历史价格走势、推荐相关优惠券和促销活动消息，商品降价后还可以获得降价提醒通知。电脑、手机、平板都支持比价！</p>
+                <p>
+                    <span class="navsp"><label for="r1">开启</label><input class="navsp_rad" type="radio" id="r1" name="wifi" value="1"></span>
+                    <span class="navsp"><label for="r2">关闭</label><input class="navsp_rad" type="radio" id="r2" name="wifi" value="0"></span>
+                </p>
+            </div>
+        </div>
+        <!-- 无线设置 end-->
+
+        <!-- 设置登录密码 -->
+        <div class="wifiConnectLayer" id="setAccount">
+            <div class="bg"></div>
+            <div class="con con3">
+                <p>管理密码设置</p>
+                <ul class="list">
+                    <li>
+                        <span class="sp-l">密码</span>
+                        <span class="sp-r" id="tips_userpwd">
+                            <label for="userpwd">请输入密码</label>
+                            <input type="password" name="userpwd" class="inpt" id="userpwd" autocomplete="off">
+                            <input type="text" name="userpwd_1" id="userpwd_1" class="inpt" style="display: none;" autocomplete="off">
+                            <em class="pwd-icon"><img src="../images/pwd-icon.png"></em>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="sp-l">确认密码</span>
+                        <span class="sp-r" id="tips_userpwd2">
+                            <label for="userpwd2">请再次输入密码</label>
+                            <input type="password" name="userpwd2" class="inpt" id="userpwd2" autocomplete="off">
+                            <input type="text" name="userpwd_2" id="userpwd_2" class="inpt" style="display: none;" autocomplete="off">
+                            <em class="pwd-icon"><img src="../images/pwd-icon.png"></em>
+                        </span>
+                    </li>
+                </ul>
+                <div class="box">
+                    <a href="javascript:;" class="btn layer-btn cannel">取消</a>
+                    <input type="button" class="btn layer-btn" id="user_confirm" value="确 认">
+                </div>
+            </div>
+        </div>
+        <!-- 设置登录密码 end-->
+        <input type="hidden" id="channel">
+    </body>
+</html>
+<script type="text/javascript">
+    init();
+    if ($.browser.msie && parseInt($.browser.version) > 6) {
+        //设置滚动条样式
+        (function ($) {
+            $(window).load(function () {
+                $("#client_list").mCustomScrollbar();
+            });
+        })(jQuery);
+    } else if (!$.browser.msie) {
+        //设置滚动条样式
+        (function ($) {
+            $(window).load(function () {
+                $("#client_list").mCustomScrollbar();
+            });
+        })(jQuery);
+    }
+
+</script>
+<script type="text/javascript">
+    var mobile = getMobile();
+    if (mobile == 1) {
+        document.location = 'http://luot.cc/m/user/index.html';
+    }
+</script>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta http-equiv="Pragma" contect="no-cache">
+        <meta http-equiv="cache-control" content="no-cache">
+        <meta http-equiv="expires" content="0">
+        <meta name="Keywords" content="">
+        <meta name="Description" content="">
+        <title>爱路由设置</title>
+        <link rel="stylesheet" href="../css/base.css">
+        <link rel="stylesheet" href="../css/router.css">
+        <link rel="stylesheet" href="../css/jquery.mCustomScrollbar.css">
+        <script type="text/javascript" src="../js/jquery.js"></script>
+        <script type="text/javascript" src="../js/jquery.md5.js"></script> 
+        <script type="text/javascript" src="../js/jquery.cookie.js"></script> 
+        <script language="javascript" type="text/javascript" src="../js/common.js"></script>
+        <script language="javascript" type="text/javascript" src="../js/config.js"></script>
+        <script type="text/javascript" src="../js/layer/layer.js"></script>
+        <script type="text/javascript" src="../js/jquery.mCustomScrollbar.concat.min.js"></script>
+        <script type="text/javascript" src="../js/user.js"></script>
+        <script type="text/javascript" src="../js/router.js"></script>
+        <script>
+            if ($.cookie('lstatus') != 'true') {
+                $.cookie('lstatus', false, {path: '/'});
+                document.location = 'http://' + document.domain + "/index.html?tt=" + new Date().getTime();
+            }
+        </script>        
+        <!--[if IE 6]>
+            <script type="text/javascript" src="../js/DD_belatedPNG.min.js"></script>
+            <script type="text/javascript">
+            DD_belatedPNG.fix("img,.png_ie,.lvl");
+            </script>
+        <![endif]-->
+        <!--[if lt IE 9]>
+            <script src="../js/respond.min.js"></script>
+        <![endif]-->
+    </head>
+
+    <body>
+        <div class="top">
+            <a href="index.html" class="logo-box"><img src="../images/logo.png" width="166"></a>
+        </div>
+        <div class="menu">
+            <a>我的路由<i class="png_ie i-1"></i></a>
+            <a>网络设置<i class="png_ie i-2"></i></a>
+            <a>无线设置<i class="png_ie i-5"></i></a>
+            <a class="selected">VPN设置<i class="png_ie i-6"></i></a>
+            <a>了解更多<i class="png_ie i-3"></i></a>
+            <a>固件升级<i class="png_ie i-4"></i></a>
+        </div>
+        <div class="wrap">
+            <div class="content">
+                <!--                <div class="img-box"><img src="../images/logo.png"></div>-->
+                <h1 class="vpn-hd">VPN</h1>
+                <div class="vpn-hd2">高速稳定不掉线，尽享优质VPN服务</div>
+                <!-- 启动vpn -->
+                <div style="display:none;" id="hvpnp"  class="bd-box">
+                    <div id="hvpnlist"></div>
+                </div>
+                <!-- 启动vpn end-->
+
+                <!-- 购买套餐 -->
+                <div class="tc-box pay" style="display:none;" id="vpnpackages">
+                    <h3>VPN套餐购买</h3>
+                    <div class="pay-box">
+                        <div class="vpn-tit2"><span class="tc-ico"></span>套餐时长：</div>
+                        <ul id="vpnshowlist">
+
+                        </ul>
+                    </div>
+
+                    <div class="pay-box">
+                        <div class="vpn-tit2"><span class="tc-ico"></span>支付方式：</div>
+                        <ul>
+                            <li><label for="wx"><input type="radio" name="paymethod" id="wx" value="2" checked class="rdo"><span class="pay-ico wx"></span>微信支付</label></li>
+                            <li><label for="zfb"><input type="radio" name="paymethod" id="zfb" value="1" class="rdo"><span class="pay-ico zfb"></span>支付宝</label></li>
+                        </ul>
+                    </div>
+
+                    <div class="pay-box">
+                        <div class="vpn-tit2"><span class="tc-ico"></span>价格：<strong class="red"><span id="orderpice"></span>元</strong></div>
+                        <p class="bz">备注：自购买日起生效</p>
+                    </div>
+
+                    <div class="btn-box">
+                        <a href="javascript:;" class="btn" id="confirm_buy">确认购买</a>
+                    </div>  
+                </div>
+                <!-- 购买套餐 end-->
+
+                <!-- VPN登录 -->
+                <div class="tc-box pay" id="vpn_login" style="display: none">
+                    <div class="con">
+                        <p>VPN登录</p>
+                        <ul class="list vpn-list">
+                            <li>
+                                <span class="sp-l">手机号</span>
+                                <span class="sp-r">
+                                    <label for="phone_login">请输入手机号</label>
+                                    <input type="text" name="phone_login" class="inpt" id="phone_login" autocomplete="off">
+                                </span>
+                            </li>
+                            <li>
+                                <span class="sp-l">密码</span>
+                                <span class="sp-r">
+                                    <label for="pass_login">请输入密码</label>
+                                    <input type="text" name="pass_login" class="inpt" id="pass_login" autocomplete="off">
+                                </span>
+                            </li>
+                        </ul>
+                        <div class="box">
+                            <a href="javascript:;" class="btn layer-btn" id="vpn_login_confirm">登录</a>
+                            <a href="javascript:;" class="btn layer-btn" id="vpn_register">注册</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- VPN登录 end-->
+
+            </div>
+
+        </div>
+
+        <!-- VPN支付 -->
+        <div class="wifiConnectLayer" id="vpn_to_pay">
+            <div class="bg"></div>
+            <div class="con">
+                <p><a id="pay_status" style="color: white;cursor: pointer">扫描二维码支付完成后请点击确认</a></p>
+            </div>
+        </div>
+        <!-- VPN支付 end-->
+
+        <!-- VPN注册 -->
+        <div class="wifiConnectLayer" id="vpn_reg">
+            <div class="bg"></div>
+            <div class="con">
+                <div class="closebtn" id="close_btn">x</div>
+                <p>VPN注册</p>
+                <ul class="list vpn-list">
+                    <li>
+                        <span class="sp-l">姓名</span>
+                        <span class="sp-r">
+                            <label for="realname">请输入姓名</label>
+                            <input type="text" name="realname" class="inpt" id="realname" autocomplete="off">
+                        </span>
+                    </li>                    <li>
+                        <span class="sp-l">身份证</span>
+                        <span class="sp-r">
+                            <label for="idcard">请输入身份证</label>
+                            <input type="text" name="idcard" class="inpt" id="idcard" autocomplete="off">
+                        </span>
+                    </li>
+                    <li>
+                        <span class="sp-l">手机号</span>
+                        <span class="sp-r">
+                            <label for="phone_num">请输入手机号</label>
+                            <input type="text" name="phone_num" class="inpt" id="phone_num" autocomplete="off">
+                        </span>
+                    </li>
+                    <li>
+                        <span class="sp-l">密码</span>
+                        <span class="sp-r">
+                            <label for="vpnpass">请输入密码</label>
+                            <input type="text" name="vpnpass" class="inpt" id="vpnpass" autocomplete="off">
+                        </span>
+                    </li>
+                    <li>
+                        <span class="sp-l">确认密码</span>
+                        <span class="sp-r">
+                            <label for="vpnpass2">请输入密码</label>
+                            <input type="text" name="vpnpass2" class="inpt" id="vpnpass2" autocomplete="off">
+                        </span>
+                    </li>
+                    <li class="nobd">
+                        <div class="code-box">
+                            <label for="vali_code">请输入验证码</label>
+                            <input type="text" name="vali_code" class="inpt" id="vali_code" autocomplete="off">
+                            <input type="button" class="code-btn" id="getValicode" value="获取验证码">
+                        </div>
+                    </li>
+                </ul>
+                <div class="box">
+                    <a href="javascript:;" class="btn layer-btn" id="vpn_confirm">提交</a>
+                </div>
+            </div>
+        </div>
+        <!-- VPN注册 end-->
+        <!-- VPN登录 -->
+        <!--        <div class="wifiConnectLayer" id="vpn_login">
+                    <div class="bg"></div>
+                    <div class="con">
+                        <p>VPN登录</p>
+                        <ul class="list vpn-list">
+                            <li>
+                                <span class="sp-l">手机号</span>
+                                <span class="sp-r">
+                                    <label for="phone_num">请输入手机号</label>
+                                    <input type="text" name="phone_login" class="inpt" id="phone_login" autocomplete="off">
+                                </span>
+                            </li>
+                            <li>
+                                <span class="sp-l">密码</span>
+                                <span class="sp-r">
+                                    <label for="phone_num">请输入密码</label>
+                                    <input type="text" name="pass_login" class="inpt" id="pass_login" autocomplete="off">
+                                </span>
+                            </li>
+                        </ul>
+                        <div class="box">
+                            <a href="javascript:;" class="btn layer-btn" id="vpn_login_confirm">登录</a>
+                            <a href="javascript:;" class="btn layer-btn" id="vpn_register">注册</a>
+                        </div>
+                    </div>
+                </div>-->
+        <!-- VPN登录 end-->
+    </body>
+</html>
+<script>
+    VpnStatus();
+</script>
+
