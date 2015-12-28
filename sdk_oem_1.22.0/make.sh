@@ -5,6 +5,7 @@ then
 	echo "run like:./make.sh GAOKE O1"
 	echo "run like:./make.sh WIAIR I1"
 	echo "run like:./make.sh WIFIS 01"
+	echo "run like:./make.sh phicomm 01"
 	exit -1
 fi
 
@@ -24,7 +25,9 @@ www_dir=www_wiair
 if [ "$vendor" == "WIFIS" ]; then
 		www_dir=www_ltpub
 fi
-
+if [ "$vendor" == "phicomm" ]; then
+		www_dir=www_phicomm
+fi
 case "$vendor" in 
 	"BLINK")
 	wanpid=4
