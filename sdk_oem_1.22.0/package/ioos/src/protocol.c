@@ -251,6 +251,7 @@ int cgi_protocol_handler(server_t*srv,connection_t *con,struct json_object* resp
     }
     cgi_protocol_t* cur_protocol;
     cur_protocol = find_pro_handler(opt);
+	DEBUG("request=%s\n",con->request);
     if(cur_protocol == NULL){
         return PRO_BASE_ARG_ERR;
     }

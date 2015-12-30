@@ -211,7 +211,7 @@ int con_check_read_finish(connection_t* con)
 		return 1;
 	}
 	*uriend++ = '\0';
-	DEBUG("uri=%s,fd=%d\n", uri, con->fd);
+	DEBUG("tturi=%s,fd=%d\n", uri, con->fd);
 	query =strchr(uri, '?');
 	if (query == NULL) {
 		DEBUG("error3\n");
