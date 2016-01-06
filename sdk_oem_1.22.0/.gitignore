@@ -14,6 +14,7 @@ kernel/linux-atm-2.5.2/
 kernel/mtd/
 kernel/packages/
 kernel/wifi/
+kernel/mt7612e_mt7602e_LinuxAP_3.0.2.9_iPA_20140103/
 package/pppoe/src/*.o
 package/pppoe/src/libevent/libevent.a
 package/pppoe/src/libevent/*.o
@@ -22,6 +23,7 @@ package/pppoe/src/pppoe-relay
 package/pppoe/src/pppoe-server
 package/pppoe/src/pppoe-sniff
 kernel/WIAIR*.bin
+kernel/PHICOMM*.bin
 kernel/root.squashfs
 kernel/uImage.lzma
 kernel/vmlinux
@@ -30,4 +32,7 @@ kernel/vmlinux-mt7620a_mt7610e.bin.lzma
 kernel/vmlinux-mt7620a_mt7610e.uImage
 kernel/vmlinux.bin.lzma
 kernel/vmlinux.elf
+factory.bin
+uboot.bin
+.config
 TAGS*~
