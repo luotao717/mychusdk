@@ -1,7 +1,16 @@
 noipdefault
+refuse-pap
 noauth
 nobsdcomp
 nodeflate
 idle 0
+holdoff 3
+mtu 1400
+mru 1400
 mppe required,no40,no56,stateless
-maxfail 0
+nodetach
+persist
+usepeerdns
+lcp-echo-failure 6
+lcp-echo-interval 10
+plugin pptp.so

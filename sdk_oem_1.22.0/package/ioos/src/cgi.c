@@ -2330,7 +2330,8 @@ int pro_net_wifi_ap_5g_handler(server_t* srv, connection_t *con, struct json_obj
 	struct json_object* obj;
 	char *ssid = NULL, *passwd = NULL;
 	char *channel = NULL, *hidden = NULL, *bw = NULL;
-	
+	struct nlk_sys_msg nlk;
+
 	if (connection_is_set(con)) {
 		CHECK_LOGIN;
 		ssid = con_value_get(con, "ssid");
@@ -2373,8 +2374,15 @@ int pro_net_wifi_ap_5g_handler(server_t* srv, connection_t *con, struct json_obj
 			arr_strcpy(config.encryption, "psk2+ccmp");
 			arr_strcpy(config.key, passwd);
 		}
+
 		if (mu_msg(WIFI_MOD_SET_AP, &config, sizeof(config), NULL, 0))
 			return CGI_ERR_FAIL;
+	
+		memset(&nlk, 0x0, sizeof(nlk));
+		nlk.comm.gid = NLKMSG_GRP_SYS;
+		nlk.comm.mid = SYS_GRP_MID_WIFI;
+		nlk.msg.wifi.type = 3;
+		nlk_event_send(NLKMSG_GRP_SYS, &nlk, sizeof(nlk));
 		return 0;
 	}
 
@@ -2794,6 +2802,7 @@ int pro_net_txrate_handler(server_t* srv, connection_t *con, struct json_object*
 	char *txrates = NULL;
 	struct wifi_conf config;
 	struct json_object* obj;
+	struct nlk_sys_msg nlk;
 
 	if (connection_is_set(con)) {
 		CHECK_LOGIN;
@@ -2805,6 +2814,11 @@ int pro_net_txrate_handler(server_t* srv, connection_t *con, struct json_object*
 			return CGI_ERR_INPUT;
 		if (mu_msg(WIFI_MOD_SET_TXRATE, &txrate, sizeof(txrate), NULL, 0))
 			return CGI_ERR_FAIL;
+		memset(&nlk, 0x0, sizeof(nlk));
+		nlk.comm.gid = NLKMSG_GRP_SYS;
+		nlk.comm.mid = SYS_GRP_MID_WIFI;
+		nlk.msg.wifi.type = 2;
+		nlk_event_send(NLKMSG_GRP_SYS, &nlk, sizeof(nlk));
 		return 0;
 	}
 	memset(&config, 0x0, sizeof(config));
@@ -2946,6 +2960,7 @@ int pro_net_channel_handler(server_t* srv, connection_t *con, struct json_object
 	int channel = 0;
 	char *channels = NULL;
 	struct json_object* obj;
+	struct nlk_sys_msg nlk;
 
 	if (connection_is_set(con)) {
 		CHECK_LOGIN;
@@ -2957,6 +2972,11 @@ int pro_net_channel_handler(server_t* srv, connection_t *con, struct json_object
 			return CGI_ERR_INPUT;
 		if (mu_msg(WIFI_MOD_SET_CHANNEL, &channel, sizeof(channel), NULL, 0))
 			return CGI_ERR_FAIL;
+		memset(&nlk, 0x0, sizeof(nlk));
+		nlk.comm.gid = NLKMSG_GRP_SYS;
+		nlk.comm.mid = SYS_GRP_MID_WIFI;
+		nlk.msg.wifi.type = 2;
+		nlk_event_send(NLKMSG_GRP_SYS, &nlk, sizeof(nlk));
 		return 0;
 	}
 	//if wifi disable,return CGI_ERR_NONEXIST
@@ -2978,6 +2998,7 @@ int pro_net_channel_5g_handler(server_t* srv, connection_t *con, struct json_obj
 	int channel = 0;
 	char *channels = NULL;
 	struct json_object* obj;
+	struct nlk_sys_msg nlk;
 
 	if (connection_is_set(con)) {
 		CHECK_LOGIN;
@@ -2996,6 +3017,11 @@ int pro_net_channel_5g_handler(server_t* srv, connection_t *con, struct json_obj
 		}
 		if (mu_msg(WIFI_MOD_SET_CHANNEL_5G, &channel, sizeof(channel), NULL, 0))
 			return CGI_ERR_FAIL;
+		memset(&nlk, 0x0, sizeof(nlk));
+		nlk.comm.gid = NLKMSG_GRP_SYS;
+		nlk.comm.mid = SYS_GRP_MID_WIFI;
+		nlk.msg.wifi.type = 3;
+		nlk_event_send(NLKMSG_GRP_SYS, &nlk, sizeof(nlk));
 		return 0;
 	}
 	//if wifi disable,return CGI_ERR_NONEXIST
@@ -3570,5 +3596,7 @@ int cgi_net_vpn_handler(server_t* srv, connection_t *con, struct json_object*res
 	json_object_object_add(response, "user", obj);
 	obj= json_object_new_string(info.password);
 	json_object_object_add(response, "password", obj);
+	obj= json_object_new_string(info.callid);
+	json_object_object_add(response, "cid", obj);
 	return 0;
 }

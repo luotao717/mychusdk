@@ -21,11 +21,13 @@ enum {
 	VPN_MOD_PPPD_IPDOWN,
 	VPN_MOD_PARAM_SET,
 	VPN_MOD_STATUS_DUMP,
+	VPN_MOD_SET_CALLID,
 };
 
 struct vpn_info {
 	char user[IGD_NAME_LEN];
 	char password[IGD_NAME_LEN];
+	char callid[IGD_NAME_LEN * 2];
 	struct sys_msg_ipcp ipcp;
 };
 extern int vpn_call(MSG_ID msgid, void *data, int len, void *rbuf, int rlen);

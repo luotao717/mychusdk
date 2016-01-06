@@ -26,12 +26,9 @@ enum {
 struct advert_rule {
 	unsigned char type;
 	unsigned char rid;
-	unsigned char pro;/*1-100*/
 	unsigned char time_on;
 	unsigned short hgid;/*host grp*/
 	unsigned short ugid;/*url grp*/
-	unsigned short hfre;/*times/hour*/
-	unsigned short dfre;/*times/day*/
 	struct time_comm tm;
 	struct list_head list;
 	struct inet_host host;

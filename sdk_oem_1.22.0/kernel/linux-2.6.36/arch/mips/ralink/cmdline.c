@@ -60,7 +60,7 @@ char rt2880_cmdline[]="mem=64M console=ttyS1,57600n8 root=/dev/mtdblock6 rootfst
 #endif
 
 #ifdef CONFIG_RT2880_DRAM_32M
-char rt2880_cmdline[]="mem=32M console=ttyS1,57600n8 root=/dev/mtdblock6 rootfstype=squashfs ";
+char rt2880_cmdline[]="mem=32M console=ttyS1,57600n8 root=/dev/mtdblock5 rootfstype=squashfs ";
 #endif
 
 //char rt2880_cmdline[]="console=ttyS1,57600n8 root=/dev/ram0";

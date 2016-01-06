@@ -116,7 +116,6 @@ enum {
 	WIFI_MOD_SET_MODE_5G,
 	WIFI_MOD_SET_ACL_5G,
 	WIFI_MOD_GET_ACL_5G,
-	WIFI_MOD_SET_HIDDEN,
 };
 
 extern int wifi_call(MSG_ID msgid, void *data, int len, void *rbuf, int rlen);

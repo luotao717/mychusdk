@@ -9,7 +9,8 @@ start() {
 	cp -rf /etc/rconf /tmp
 	if [ $? -eq 0 ];then
 		echo "tar rconf.tar.gz succ"
-		cp /etc/rconf_check /tmp/rconf_check
+		cp /etc/rconf_check /tmp/rconf_check_old
+		mkdir /tmp/alone
 	else
 		echo "tar rconf.tar.gz fail"
 		rm -rf /tmp/rconf
@@ -20,6 +21,7 @@ start() {
 	echo "1" > /proc/sys/net/ipv4/ip_forward
 	echo "1024 65535" > /proc/sys/net/ipv4/ip_local_port_range
 	echo "0" > /proc/sys/net/ipv4/conf/all/rp_filter
+	echo "1" > /proc/sys/net/netfilter/nf_conntrack_acct
 
 	#netdev
 	echo "300" > /proc/sys/net/core/netdev_max_backlog
@@ -40,7 +42,7 @@ start() {
 	echo "10" > /proc/sys/net/ipv4/netfilter/ip_conntrack_tcp_timeout_syn_sent
 	echo "30" > /proc/sys/net/ipv4/netfilter/ip_conntrack_tcp_timeout_time_wait
 	#echo "0" > /proc/sys/net/ipv4/netfilter/ip_conntrack_tcp_loose
-	echo "4096" > /proc/sys/vm/min_free_kbytes
+	echo "1500" > /proc/sys/vm/min_free_kbytes
 
 	#udp timeout
 	echo "10" > /proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout
@@ -49,7 +51,8 @@ start() {
 	#route
 	echo "15" > /proc/sys/net/ipv4/route/gc_interval
 	echo "4000" > /proc/sys/net/ipv4/route/max_size
-	echo "16" > /proc/sys/vm/lowmem_reserve_ratio
+	#echo "16" > /proc/sys/vm/lowmem_reserve_ratio
+	echo "3" > /proc/sys/vm/drop_caches
 }
 
 stop() {

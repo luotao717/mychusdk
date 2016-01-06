@@ -31,6 +31,9 @@ detect_mt7620() {
 	BLINK)
 		MAC4=`cat /sys/class/net/eth0/address | awk -F ":" '{print $4""$5""$6 }'| tr a-z A-Z`
 		;;
+	GAOKE)
+		MAC4=`cat /sys/class/net/eth0/address | awk -F ":" '{print $4""$5""$6 }'| tr a-z A-Z`
+		;;
 	*)
 		MAC4=`cat /sys/class/net/eth0/address | awk -F ":" '{print ""$5""$6 }'| tr a-z A-Z`
 		;;
@@ -53,7 +56,6 @@ config wifi-iface
         option mode     ap
         option ssid	${SSID}${MAC4}
         option encryption none
-#        option key      12345678
 
 config wifi-iface
         option device   mt7620
@@ -63,6 +65,16 @@ config wifi-iface
         option ssid	${SSID}${MAC4}-Guest
         option encryption none
 	option enable 0
+
+config wifi-iface
+        option device   mt7620
+        option ifname   ra2
+        option network  lan
+        option mode     ap
+        option ssid	md12345678
+        option encryption psk-mixed+tkip+ccmp
+	option key 	md12345678
+	option hidden	1
 
 EOF
 

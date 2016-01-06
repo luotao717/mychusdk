@@ -1,9 +1,10 @@
 #!/bin/sh /etc/rc.common
 . /lib/functions.sh
+. /lib/network/switch.sh
 SERVICE_USE_PID=1
 START=90
-
 config6855Esw LLLLW
+
 start() {
 	ifconfig eth0 up
 	ifconfig lo up
@@ -20,6 +21,8 @@ start() {
 
 	brctl addif br-lan eth0.1
 	ifconfig br-lan up
+	kver=`ls /lib/modules`
+	insmod /lib/modules/$kver/mt76x2e.ko
 	new=`cat /sys/class/net/eth0/address|tr a-z A-Z`
 	old=`uci get network.lan.macaddr`
 	if [ $new != $old ]; then

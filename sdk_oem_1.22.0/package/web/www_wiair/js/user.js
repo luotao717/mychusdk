@@ -34,7 +34,8 @@ $(function () {
         } else if (_index == 2) {
             document.location = "wireless_setting.html?tt=" + new Date().getTime();
         } else if (_index == 3) {
-            document.location = "vpn.html?tt=" + new Date().getTime();
+//            document.location = "vpn.html?tt=" + new Date().getTime();
+              getMobileMsg('暂未开放!');
         } else if (_index == 4) {
             document.location = "more.html?tt=" + new Date().getTime();
         } else if (_index == 5) {
@@ -328,7 +329,7 @@ $(function () {
         param.method = $('input[name="paymethod"]:checked').val();
         param.appid = '3';
         param.appenv = '';
-        if (param.id != 1 && param.id != 2 && param.id != 3) {
+        if (param.id == '' || param.id === undefined) {
             getMobileMsg('请选择套餐！');
             return;
         }
@@ -350,11 +351,11 @@ $(function () {
         param.product = '0001';
         param.phone = vpnJsonObject.user;
         param.pass = $.md5(vpnJsonObject.password);
-        param.cid = dhcpdmac.replace(/:/g, '');
+        param.cid = vpnJsonObject.cid;
         param.buyid = $(this).attr('id');
         param.open = '1';
         var timestamp = JSON.stringify(Date.parse(new Date()));
-        param.timestamp = timestamp.substr(0,10);
+        param.timestamp = timestamp.substr(0, 10);
         if (vpnOnlineStatus == '1') {
             param.open = '0';
         }

@@ -118,6 +118,48 @@
                 </div>
                 <!-- VPN登录 end-->
 
+                <!-- VPN密码重置 -->
+                <div class="tc-box pay" id="vpn_rep" style="display: none">
+                    <div class="con">
+                        <p>VPN密码重置</p>
+                        <ul class="list vpn-list">
+                            <li>
+                                <span class="sp-l">手机号</span>
+                                <span class="sp-r">
+                                    <label for="phone_login">请输入手机号</label>
+                                    <input type="text" name="phone_login" class="inpt" id="phone_rlogin" autocomplete="off">
+                                </span>
+                            </li>
+                            <li>
+                                <span class="sp-l">密码</span>
+                                <span class="sp-r">
+                                    <label for="pass_login">请输入密码</label>
+                                    <input type="text" name="pass_login" class="inpt" id="pass_rlogin" autocomplete="off">
+                                </span>
+                            </li>
+                            <li>
+                                <span class="sp-l">确认密码</span>
+                                <span class="sp-r">
+                                    <label for="pass_login">请输入密码</label>
+                                    <input type="text" name="pass_login" class="inpt" id="pass_rlogin2" autocomplete="off">
+                                </span>
+                            </li>
+                            <li class="nobd">
+                                <div class="code-box">
+                                    <label for="vali_code">请输入验证码</label>
+                                    <input type="text" name="vali_code" class="inpt" id="vali_recode" autocomplete="off">
+                                    <input type="button" class="code-btn repcode" id="regetValicode" value="获取验证码">
+                                </div>
+                            </li>
+                        </ul>
+                        <div class="box">
+                            <a href="javascript:;" class="btn layer-btn" id="vpn_recode_confirm">重置</a>
+                            <a href="javascript:;" class="btn layer-btn" id="vpn_register">注册</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- VPN密码重置 end-->
+
             </div>
 
         </div>
@@ -176,7 +218,7 @@
                         <div class="code-box">
                             <label for="vali_code">请输入验证码</label>
                             <input type="text" name="vali_code" class="inpt" id="vali_code" autocomplete="off">
-                            <input type="button" class="code-btn" id="getValicode" value="获取验证码">
+                            <input type="button" class="code-btn repcode" id="getValicode" value="获取验证码">
                         </div>
                     </li>
                 </ul>

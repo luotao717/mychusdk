@@ -14,10 +14,19 @@ extern "C" {
 
 #define IGD_HOST_MX   HOST_MX //is unsigned char max 255
 #define IGD_HOST_IP_MX   IGD_HOST_MX //is unsigned char max 255
+
+#ifdef FLASH_4_RAM_32
+#define IGD_HOST_APP_MX   30 //is unsigned char max 255
+#define IGD_HOST_URL_MX   20
+#define IGD_HOST_LOG_MX   50 //is unsigned char max 255
+#define IGD_HOST_UA_MX   30 //is unsigned char max 255
+#else
 #define IGD_HOST_APP_MX   60 //is unsigned char max 255
 #define IGD_HOST_URL_MX   20
 #define IGD_HOST_LOG_MX   200 //is unsigned char max 255
 #define IGD_HOST_UA_MX   50 //is unsigned char max 255
+#endif
+
 #define IGD_HOST_INTERCEPT_URL_MX   20
 #define IGD_APP_MOD_TIME_MX   10
 #define IGD_STUDY_TIME_NUM   10
@@ -461,13 +470,6 @@ enum {
 };
 
 extern int igd_host_call(MSG_ID msgid, void *data, int d_len, void *back, int b_len);
-
-#define IGD_HOST_DBG(fmt,args...) do { \
-	igd_log("/tmp/igd_host_dbg", "DBG:%s[%d]:"fmt, __FUNCTION__, __LINE__, ##args); \
-} while(0)
-#define IGD_HOST_ERR(fmt,args...) do { \
-	igd_log("/tmp/igd_host_err", "ERR:%s[%d]:"fmt, __FUNCTION__, __LINE__, ##args); \
-} while(0)
 
 #ifdef __cplusplus
 }

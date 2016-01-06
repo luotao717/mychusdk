@@ -49,12 +49,10 @@
 #include "pptp_callmgr.h"
 #include <net/if.h>
 #include <net/ethernet.h>
-#include <linux/if_pppox.h>
 
 #include <stdio.h>
 #include <stdlib.h>
-
-
+#include "if_pppox.h"
 
 extern char** environ;
 

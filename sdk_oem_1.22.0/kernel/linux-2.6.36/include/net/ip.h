@@ -101,7 +101,7 @@ extern int		ip_output(struct sk_buff *skb);
 #ifdef CONFIG_NF_IGD
 extern int ip_finish_output(struct sk_buff *skb);
 extern int ip_rcv_finish(struct sk_buff *skb);
-unsigned int nf_nat_in(unsigned int hooknum,
+extern unsigned int nf_nat_in(unsigned int hooknum,
 	  struct sk_buff *skb,
 	  const struct net_device *in,
 	  const struct net_device *out,

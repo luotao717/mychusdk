@@ -60,7 +60,8 @@ $(function () {
         } else if (_index == 1) {
             document.location = 'http://' + document.domain + "/m/user/setNet.html?tt=" + new Date().getTime();
         } else if (_index == 2) {
-            document.location = 'http://' + document.domain + "/m/user/vpn.html?tt=" + new Date().getTime();
+//            document.location = 'http://' + document.domain + "/m/user/vpn.html?tt=" + new Date().getTime();
+            getMobileMsg('暂未开放!');
         } else if (_index == 3) {
             document.location = 'http://' + document.domain + "/m/user/online.html?tt=" + new Date().getTime();
         } else if (_index == 4) {
@@ -684,7 +685,7 @@ $(function () {
         param.product = '0001';
         param.phone = vpnJsonObject.user;
         param.pass = $.md5(vpnJsonObject.password);
-        param.mac = dhcpdmac.replace(/:/g, '');
+        param.cid = dhcpdmac;
         param.buyid = $(this).attr('id');
         param.open = '1';
         if (vpnOnlineStatus == '1') {

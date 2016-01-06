@@ -5,11 +5,11 @@
 
 struct http_rule_api {
 	struct inet_l3 l3;
-	unsigned char extra;
-	unsigned char log;
+	unsigned long flags;
 	unsigned short mid;
-	unsigned short prio;
+	unsigned short period;
 	unsigned short times;
+	short prio;
 	union {
 		struct url_rd rd;
 		char data[512];

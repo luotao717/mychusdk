@@ -61,17 +61,22 @@ static struct mtd_partition rt2880_partitions[] = {
             name:           "Factory",
             size:            MTD_FACTORY_PART_SIZE,
             offset:        MTD_FACTORY_PART_OFFSET,
-     },{
+     },
+#if defined (CONFIG_RT2880_FLASH_8M)
+     {
      	     name:           "params",
             size:           MTD_PARAM_PART_SIZE,
             offset:        MTD_PARAM_PART_OFFSET,
-     },{
-     #if 0
+     },
+#endif
+ #if 0
+     {
 		name: 		"Kernel",
 		size:		MTD_KERN_PART_SIZE,
 		offset:		 MTD_KERN_PART_OFFSET,
-	}, {
-	#endif
+	}, 
+#endif
+     {
             name:           "firmware",
             size:            MTD_KERN_ROOTFS_PART_SIZE,
             offset:         MTD_KERN_ROOTFS_PART_OFFSET,

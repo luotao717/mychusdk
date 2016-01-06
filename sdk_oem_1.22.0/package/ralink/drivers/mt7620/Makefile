@@ -62,6 +62,7 @@ define KernelPackage/mt7620/install
 	$(INSTALL_BIN) ./files/mt7620.dat $(1)/etc/Wireless/mt7620/
 	$(INSTALL_BIN) ./files/mt7620.dat $(1)/etc/Wireless/mt7620/mt7620.dat.orig
 	-$(INSTALL_BIN) ./files/mt7620.eeprom.bin $(1)/etc/Wireless/mt7620/
+	rm -rf $(1)/lib/modules/2.6.36/mt7620.ko
 endef
 
 $(eval $(call KernelPackage,mt7620))

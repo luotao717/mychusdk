@@ -71,7 +71,7 @@ define KernelPackage/mt76x2e/install
 	fi
 	-if [ "$(CONFIG_RT_SECOND_CARD)" == "7612" ]; then \
 		$(INSTALL_DIR) $(1)/etc/Wireless/mt7612/ ; \
-		$(INSTALL_BIN) ./files/mt7612.sh $(1)/lib/wifi/ ; \
+		$(INSTALL_BIN) ./files/mt7622.sh $(1)/lib/wifi/ ; \
 		$(INSTALL_BIN) ./files/mt7612.dat $(1)/etc/Wireless/mt7612/ ; \
 		$(INSTALL_BIN) ./files/mt7612.dat $(1)/etc/Wireless/mt7612/mt7612.dat.orig ; \
 		$(INSTALL_BIN) ./files/mt7612.eeprom.bin $(1)/etc/Wireless/mt7612/ ; \

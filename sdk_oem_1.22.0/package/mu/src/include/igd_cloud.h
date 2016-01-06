@@ -133,13 +133,21 @@ enum CLOUD_CONF_ALONE {
 };
 
 #define RCONF_RETRY_NUM   3
+#ifdef FLASH_4_RAM_32
+#define RCONF_CHECK   "/tmp/rconf_check_old"
+#else
 #define RCONF_CHECK   "/etc/rconf_check"
+#endif
 #define RCONF_CHECK_TMP   "/tmp/rconf_check"
 #define RCONF_DIR  "/etc/rconf"
 #define RCONF_DIR_TMP  "/tmp/rconf"
 #define RCONF_DIR_NEW  "/tmp/rconf_new"
 
+#ifdef FLASH_4_RAM_32
+#define ALONE_DIR  "/tmp/alone"
+#else
 #define ALONE_DIR  "/etc/alone"
+#endif
 
 #define RCONF_FLAG_VER           "VER:"
 #define RCONF_FLAG_L7            "F01:"
@@ -162,6 +170,11 @@ enum CLOUD_CONF_ALONE {
 struct nlk_cloud_config {
 	struct nlk_msg_comm comm;
 	int ver[CCT_MAX];
+};
+
+struct nlk_alone_config {
+	struct nlk_msg_comm comm;
+	int flag;
 };
 
 /*ICFT: igd cloud flag*/

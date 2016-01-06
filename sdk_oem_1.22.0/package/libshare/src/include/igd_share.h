@@ -57,6 +57,7 @@
 #define IGD_DNS_LEN 40
 #define IGD_URI_LEN 32
 #define IGD_URL_LEN (IGD_DNS_LEN + IGD_URI_LEN)
+#define URL_LOG_URL_LEN 256
 
 enum {
 	L7_APP_HTTP_DL = L7_APP_MX * L7_MID_DL + 1,
@@ -115,6 +116,7 @@ enum {
 	SYS_GRP_MID_ONLINE,
 	SYS_GRP_MID_WIFI,
 	SYS_GRP_MID_ADMIN,
+	SYS_GRP_MID_ALONE,
 };
 
 /*end for netlink broadcast grp id*/
@@ -236,9 +238,14 @@ struct inet_l7 {
 struct url_log_node {
 	time_t time;
 	unsigned char mac[6];
-	char host[IGD_DNS_LEN];
+	char url[URL_LOG_URL_LEN];
 	char dst[URL_RULE_DST_LEN];
 };
+
+#define URL_RULE_HOST_BEGIN_BIT		10 /* host start by ^www.baidu.com */
+#define URL_RULE_HOST_END_BIT		11 /* end by baidu.com$ */
+#define URL_RULE_LOG_BIT		13
+#define URL_RULE_STUDY_BIT		14
 
 enum {
 	URL_MID_PASS = 0,
@@ -487,7 +494,6 @@ struct nlk_url_sec {
 
 #define URL_LOG_LIST_MX 256
 #define URL_LOG_MX_NR 128
-#define URL_LOG_URL_LEN 150
 
 enum {
 	NLK_URL_LOG_PARAM,
@@ -514,10 +520,10 @@ struct nlk_url {
 	struct nlk_msg_comm comm;
 	struct inet_host src;
 	struct inet_l3 l3; /* only support url and url id */
-	unsigned short extra; /* only used by study target  */
 	unsigned short type;
 	unsigned short times; /* match times */
-	unsigned short log; /* is do log */
+	unsigned short period; /* match times */
+	unsigned long flags;
 };
 
 /*url statistics end*/
@@ -739,6 +745,7 @@ struct time_comm {
 #define RD_KEY_RIP	2
 #define RD_KEY_RMAC	3
 #define RD_KEY_SSID	4
+#define RD_KEY_HTTPS	20
 #define RD_KEY_URL	29
 
 struct url_rd {

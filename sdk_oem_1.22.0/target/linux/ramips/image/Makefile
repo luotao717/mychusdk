@@ -78,8 +78,12 @@ define Mkallflashimage
 	cp -a $(TOPDIR)/uboot.bin $(BIN_DIR)/; \
 	cp -a $(TOPDIR)/factory.bin $(BIN_DIR)/; \
 	cp -a $(BIN_DIR)/uboot.bin $(BIN_DIR)/flash-$(1); \
-	dd if=$(BIN_DIR)/factory.bin of=$(BIN_DIR)/flash-$(1) bs=64K seek=4; \
-	dd if=$(BIN_DIR)/$(1) of=$(BIN_DIR)/flash-$(1) bs=64K seek=6 
+	dd if=$(BIN_DIR)/factory.bin of=$(BIN_DIR)/flash-$(1) bs=64K seek=4 
+	if [ "$(FLASH_SIZE)" = "8M" ]; then \
+		dd if=$(BIN_DIR)/$(1) of=$(BIN_DIR)/flash-$(1) bs=64K seek=6; \
+	else \
+		dd if=$(BIN_DIR)/$(1) of=$(BIN_DIR)/flash-$(1) bs=64K seek=5; \
+	fi
 endef
 
 #$(eval VERSION_DATE=$(cat $(TARGET_DIR)/etc/config/fwinfo | grep version | awk '{print$3}'))
@@ -91,9 +95,8 @@ define MkImageSysupgrade/squashfs
 	@echo 3=$(3)
 	@echo 4=$(4)
 	$(eval DATE=$(shell date '+%Y%m%d'))
-	$(eval PRODUCT=$(shell cat $(firmware) |grep 'PRODUCT=' | cut -c 9-))
 	$(eval VERSION=$(shell cat $(firmware) |grep 'CURVER=' | cut -c 8-))
-	$(eval output_name=WIAIR-$(PRODUCT)-$(VERSION)-$(DATE).bin)
+	$(eval output_name=$(VENDOR)-$(PRODUCT)-$(VERSION)-$(DATE).bin)
 	$(eval output_name=$(shell printf "$(output_name)" | sed 's/(/\\(/g' | sed 's/)/\\)/g' ))
 	@echo BIN_DIR=$(BIN_DIR)
 	@echo $(if $(4),$(4),sysupgrade)=$(if $(4),$(4),sysupgrade)
@@ -107,6 +110,7 @@ define MkImageSysupgrade/squashfs
 		$(CP) $(KDIR)/$(output_name) $(BIN_DIR)/$(output_name); \
 	fi
 	$(call Mkallflashimage,$(output_name))
+	#$(CP) $(KDIR)/$(output_name)  /tftp/1
 endef
 
 define PatchKernelLzmaDtb

@@ -32,11 +32,12 @@ var accountPwdReason = 19;
 var userLoginStatus = 0;
 var str_md5;
 var mob = getMobile();
-var vpnUrl = 'http://123.59.70.97:8086/vpn/service/data';
+var vpnUrl = 'http://vpn.hbdata.cc:8090/vpn/service/data';
 var vpnJson;
 var vpnJsonObject;
 var dhcpdmac;
 var vpnOnlineStatus;
+var intervaldhcp;
 
 /*
  * 获取wanConfigJson
@@ -1466,9 +1467,9 @@ function VpnStatus() {
     if (vpnJson === undefined) {
         return;
     }
-    if (dhcpdmac === undefined) {
-        getdhcpdmac();
-    }
+//    if (dhcpdmac === undefined) {
+//        getdhcpdmac();
+//    }
     var list = vpnJson.packages;
     var listCode = vpnJson.code;
     if (list === undefined) {
@@ -1498,7 +1499,7 @@ function vpnhtml(list, code) {
     var startButton = '';
     for (var i = 0; i < list.length; i++) {
         if (code == '106') {
-            html += '<li><label><input data=' + list[i].price + ' type="radio" value=' + list[i].id + ' name="choicepackage" class="rdo">' + list[i].name + '（仅需' + list[i].price + '元！即可' + list[i].name + '使用！）</label></li>';
+            html += '<li><label><input type="radio" value=' + list[i].id + ' name="choicepackage" class="rdo">' + list[i].name + '</label></li>';
         } else if (code == '109') {
             if (vpnOnlineStatus == '1') {
                 startButton = '关闭VPN';
@@ -1531,6 +1532,29 @@ function vpnInfo(type, user, pwd) {
         if (data.error == 0) {
             if (type == 'get') {
                 vpnJsonObject = data;
+                if (data.cid == '' || data.cid === undefined) {
+                    if (mob == 1) {
+                        loadingLay = layer.open({
+                            type: 1,
+                            shadeClose: false,
+                            content: '<div class="loading"><p><img src="../../images/loading-2.gif"></p><p>正在连接VPN服务器...</p></div>',
+                            style: 'background-color: transparent;  box-shadow: none;'
+                        });
+                    } else {
+                        loading(2, '正在连接VPN服务器...', 3);
+                    }
+                    var i = 0;
+                    intervaldhcp = setInterval(function () {
+                        getvpnInfocid();
+                        i++;
+                        if (i >= 15) {
+                            layer.closeAll();
+                            getMobileMsg('VPN服务器连接失败！');
+                            clearInterval(intervaldhcp);
+                            return;
+                        }
+                    }, 4000);
+                }
             }
         }
     }, 'json');
@@ -1545,13 +1569,23 @@ function getdhcpdmac() {
     }, 'json');
 }
 
+function getvpnInfocid() {
+    $.ajaxSettings.async = false;
+    $.get(actionUrl + 'fname=net&opt=vpn_info&function=get', function (data) {
+        if (data.error == 0 && data.cid != '' && data.cid !== undefined) {
+            vpnJsonObject = data;
+            clearInterval(intervaldhcp);
+        }
+    }, 'json');
+}
+
 function vpnOnline(status) {
     var param = {};
     param.code = '111';
     param.product = '0001';
     param.phone = vpnJsonObject.user;
     param.pass = $.md5(vpnJsonObject.password);
-    param.cid = dhcpdmac.replace(/:/g, '').toUpperCase();
+    param.cid = vpnJsonObject.cid;
 //    param.routerid = vpnJsonObject.routerid;
     getVpn(param, status);
 }

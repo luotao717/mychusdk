@@ -31,10 +31,9 @@
 #define HOST_ALL_MX	16
 #define CONN_MX		2000
 #else
-#define HOST_MX		3
-#define HOST_ALL_MX	3
-#define CONN_MX		500
+#define HOST_MX		64
+#define HOST_ALL_MX	64
+#define CONN_MX		4000
 #endif
 #define HTTP_HOST_LOG_PER_MX	256
-
 #endif
