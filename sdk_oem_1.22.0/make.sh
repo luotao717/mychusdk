@@ -16,9 +16,9 @@ wanpid=4
 reset=1
 vendor=$1
 product=$2
-lanip=192.168.11.1
-domain=luot.cc
-ssid=SMARTWiFi-
+lanip=192.168.2.1
+domain=phicomm.me
+ssid=PHICOMM_
 firmware=/dev/mtd4
 www_dir=www_wiair
 

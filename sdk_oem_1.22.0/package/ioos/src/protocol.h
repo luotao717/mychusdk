@@ -18,6 +18,9 @@ typedef struct _cgi_protocol_t{
 }cgi_protocol_t, *cgi_protocol_tp;
 
 extern cgi_protocol_t *find_pro_handler(const char *pro_opt);
+//by luot
+extern cgi_protocol_t *find_pro_handler_lktos(const char *pro_opt);
+
 
 //#define CHECK_LOGIN
 #endif

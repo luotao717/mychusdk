@@ -96,6 +96,8 @@ typedef struct connection{
 extern connection_t list;
 extern char* con_value_get(connection_t *con,char*key);
 extern void connections_init(connection_t *list);
+// by luot
+extern int connection_is_set_lktos(connection_t *con);
 extern int connection_is_set(connection_t *con);
 extern connection_t* connections_search(connection_t *list,int fd);
 extern void connections_del(connection_t *list,connection_t*con);
