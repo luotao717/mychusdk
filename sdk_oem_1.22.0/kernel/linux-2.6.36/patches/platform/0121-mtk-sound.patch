@@ -1,0 +1,2564 @@
+Index: linux-2.6.36/sound/core/control.c
+===================================================================
+--- linux-2.6.36.orig/sound/core/control.c
++++ linux-2.6.36/sound/core/control.c
+@@ -1166,6 +1166,24 @@ static long snd_ctl_ioctl(struct file *f
+ 	int __user *ip = argp;
+ 	int err;
+ 
++	//pork:printk("%s:%s \n",__func__,(cmd==SNDRV_CTL_IOCTL_PVERSION)?"PVER":\
++			(cmd==SNDRV_CTL_IOCTL_CARD_INFO)?"CARDINFO":\
++					(cmd==SNDRV_CTL_IOCTL_ELEM_LIST)?"ELEM LIST":\
++							(cmd==SNDRV_CTL_IOCTL_ELEM_INFO)?"ELEM INFO":\
++									(cmd==SNDRV_CTL_IOCTL_ELEM_READ)?"ELEM READ":\
++											(cmd==SNDRV_CTL_IOCTL_ELEM_WRITE)?"ELEM Write":\
++													(cmd==SNDRV_CTL_IOCTL_ELEM_LOCK)?"ELEM LOCK":\
++															(cmd==SNDRV_CTL_IOCTL_ELEM_UNLOCK)?"ELEM UNLK":\
++																	(cmd==SNDRV_CTL_IOCTL_ELEM_ADD)?"ELEM add":\
++																			(cmd==SNDRV_CTL_IOCTL_ELEM_REPLACE)?"ELEM replace":\
++																					(cmd==SNDRV_CTL_IOCTL_ELEM_REMOVE)?"ELEM remove":\
++																							(cmd==SNDRV_CTL_IOCTL_SUBSCRIBE_EVENTS)?"sub event":\
++																									(cmd==SNDRV_CTL_IOCTL_TLV_READ)?"TLV READ":\
++																											(cmd==SNDRV_CTL_IOCTL_TLV_WRITE)?"TLV Write":\
++																													(cmd==SNDRV_CTL_IOCTL_TLV_COMMAND)?"TLV Write":\
++																															(cmd==SNDRV_CTL_IOCTL_POWER)?"pow":\
++																																	(cmd==SNDRV_CTL_IOCTL_POWER_STATE)?"power stat":"others");
++
+ 	ctl = file->private_data;
+ 	card = ctl->card;
+ 	if (snd_BUG_ON(!card))
+Index: linux-2.6.36/sound/core/pcm_lib.c
+===================================================================
+--- linux-2.6.36.orig/sound/core/pcm_lib.c
++++ linux-2.6.36/sound/core/pcm_lib.c
+@@ -2026,6 +2026,12 @@ static snd_pcm_sframes_t snd_pcm_lib_rea
+ 		return 0;
+ 
+ 	snd_pcm_stream_lock_irq(substream);
++	//printk("%s:size:%d thre:%d %s \n",__func__,size,runtime->start_threshold,(runtime->status->state == SNDRV_PCM_STATE_PREPARED)?"prepared":\
++				(runtime->status->state == SNDRV_PCM_STATE_DRAINING)?"draining":\
++					(runtime->status->state == SNDRV_PCM_STATE_RUNNING)?"RUNNING":\
++							(runtime->status->state == SNDRV_PCM_STATE_PAUSED)?"PAUSED":\
++									(runtime->status->state == SNDRV_PCM_STATE_XRUN)?"XRUN":\
++											(runtime->status->state == SNDRV_PCM_STATE_SUSPENDED)?"SUSPENDED":"others");
+ 	switch (runtime->status->state) {
+ 	case SNDRV_PCM_STATE_PREPARED:
+ 		if (size >= runtime->start_threshold) {
+Index: linux-2.6.36/sound/core/pcm_native.c
+===================================================================
+--- linux-2.6.36.orig/sound/core/pcm_native.c
++++ linux-2.6.36/sound/core/pcm_native.c
+@@ -1737,8 +1737,13 @@ static int snd_pcm_hw_rule_sample_bits(s
+ #error "Change this table"
+ #endif
+ 
++#ifdef CONFIG_SND_RALINK_SOC
++static unsigned int rates[] = { 5512, 8000, 11025, 16000, 22050, 32000, 44100,
++                                 48000, 64000, 88200, 96000, 176400, 192000,12000,24000 };
++#else
+ static unsigned int rates[] = { 5512, 8000, 11025, 16000, 22050, 32000, 44100,
+                                  48000, 64000, 88200, 96000, 176400, 192000 };
++#endif
+ 
+ const struct snd_pcm_hw_constraint_list snd_pcm_known_rates = {
+ 	.count = ARRAY_SIZE(rates),
+@@ -2499,6 +2504,15 @@ static int snd_pcm_common_ioctl1(struct 
+ 				 struct snd_pcm_substream *substream,
+ 				 unsigned int cmd, void __user *arg)
+ {
++
++	//printk("%s:%d cmd:%s \n",__func__,__LINE__,(cmd==SNDRV_PCM_IOCTL_HW_REFINE)?"refine":\
++			(cmd==SNDRV_PCM_IOCTL_HW_FREE)?"free":\
++					(cmd==SNDRV_PCM_IOCTL_RESET)?"reset":\
++							(cmd==SNDRV_PCM_IOCTL_UNLINK)?"unlink":\
++									(cmd==SNDRV_PCM_IOCTL_XRUN)?"XRUN":\
++											(cmd==SNDRV_PCM_IOCTL_HWSYNC)?"HWSYNC":\
++													(cmd==SNDRV_PCM_IOCTL_DROP)?"drop":\
++															(cmd==SNDRV_PCM_IOCTL_PAUSE)?"pause":"others");
+ 	switch (cmd) {
+ 	case SNDRV_PCM_IOCTL_PVERSION:
+ 		return put_user(SNDRV_PCM_VERSION, (int __user *)arg) ? -EFAULT : 0;
+Index: linux-2.6.36/sound/soc/Kconfig
+===================================================================
+--- linux-2.6.36.orig/sound/soc/Kconfig
++++ linux-2.6.36/sound/soc/Kconfig
+@@ -7,6 +7,7 @@ menuconfig SND_SOC
+ 	select SND_PCM
+ 	select AC97_BUS if SND_SOC_AC97_BUS
+ 	select SND_JACK if INPUT=y || INPUT=SND
++	default y
+ 	---help---
+ 
+ 	  If you want ASoC support, you should say Y here and also to the
+@@ -40,6 +41,7 @@ source "sound/soc/s3c24xx/Kconfig"
+ source "sound/soc/s6000/Kconfig"
+ source "sound/soc/sh/Kconfig"
+ source "sound/soc/txx9/Kconfig"
++source "sound/soc/mtk/Kconfig"
+ 
+ # Supported codecs
+ source "sound/soc/codecs/Kconfig"
+Index: linux-2.6.36/sound/soc/Makefile
+===================================================================
+--- linux-2.6.36.orig/sound/soc/Makefile
++++ linux-2.6.36/sound/soc/Makefile
+@@ -2,19 +2,22 @@ snd-soc-core-objs := soc-core.o soc-dapm
+ 
+ obj-$(CONFIG_SND_SOC)	+= snd-soc-core.o
+ obj-$(CONFIG_SND_SOC)	+= codecs/
+-obj-$(CONFIG_SND_SOC)	+= atmel/
+-obj-$(CONFIG_SND_SOC)	+= au1x/
+-obj-$(CONFIG_SND_SOC)	+= blackfin/
+-obj-$(CONFIG_SND_SOC)	+= davinci/
+-obj-$(CONFIG_SND_SOC)	+= ep93xx/
+-obj-$(CONFIG_SND_SOC)	+= fsl/
+-obj-$(CONFIG_SND_SOC)   += imx/
+-obj-$(CONFIG_SND_SOC)	+= jz4740/
+-obj-$(CONFIG_SND_SOC)	+= nuc900/
+-obj-$(CONFIG_SND_SOC)	+= omap/
+-obj-$(CONFIG_SND_SOC)	+= kirkwood/
+-obj-$(CONFIG_SND_SOC)	+= pxa/
+-obj-$(CONFIG_SND_SOC)	+= s3c24xx/
+-obj-$(CONFIG_SND_SOC)	+= s6000/
+-obj-$(CONFIG_SND_SOC)	+= sh/
+-obj-$(CONFIG_SND_SOC)	+= txx9/
++#obj-$(CONFIG_SND_SOC)	+= atmel/
++#obj-$(CONFIG_SND_SOC)	+= au1x/
++#obj-$(CONFIG_SND_SOC)	+= blackfin/
++#obj-$(CONFIG_SND_SOC)	+= davinci/
++#obj-$(CONFIG_SND_SOC)	+= ep93xx/
++#obj-$(CONFIG_SND_SOC)	+= fsl/
++#obj-$(CONFIG_SND_SOC)   += imx/
++#obj-$(CONFIG_SND_SOC)	+= jz4740/
++#obj-$(CONFIG_SND_SOC)	+= nuc900/
++#obj-$(CONFIG_SND_SOC)	+= omap/
++#obj-$(CONFIG_SND_SOC)	+= kirkwood/
++#obj-$(CONFIG_SND_SOC)	+= pxa/
++#obj-$(CONFIG_SND_SOC)	+= s3c24xx/
++#obj-$(CONFIG_SND_SOC)	+= s6000/
++#obj-$(CONFIG_SND_SOC)	+= sh/
++#obj-$(CONFIG_SND_SOC)	+= txx9/
++
++#MTK SND SoC
++obj-$(CONFIG_SND_SOC)	+= mtk/
+Index: linux-2.6.36/sound/soc/codecs/Kconfig
+===================================================================
+--- linux-2.6.36.orig/sound/soc/codecs/Kconfig
++++ linux-2.6.36/sound/soc/codecs/Kconfig
+@@ -9,7 +9,7 @@ config SND_SOC_I2C_AND_SPI
+ 	default y if SPI_MASTER=y
+ 
+ config SND_SOC_ALL_CODECS
+-	tristate "Build all ASoC CODEC drivers"
++	tristate
+ 	select SND_SOC_L3
+ 	select SND_SOC_AC97_CODEC if SND_SOC_AC97_BUS
+ 	select SND_SOC_AD1836 if SPI_MASTER
+@@ -188,99 +188,15 @@ config SND_SOC_UDA134X
+ config SND_SOC_UDA1380
+         tristate
+ 
+-config SND_SOC_WM8350
+-	tristate
+-
+-config SND_SOC_WM8400
+-	tristate
+-
+-config SND_SOC_WM8510
+-	tristate
+-
+-config SND_SOC_WM8523
+-	tristate
+-
+-config SND_SOC_WM8580
+-	tristate
+-
+-config SND_SOC_WM8711
+-	tristate
+-
+-config SND_SOC_WM8727
+-	tristate
+-
+-config SND_SOC_WM8728
+-	tristate
+-
+-config SND_SOC_WM8731
+-	tristate
+-
+-config SND_SOC_WM8741
+-	tristate
+-
+-config SND_SOC_WM8750
+-	tristate
+-
+-config SND_SOC_WM8753
+-	tristate
+-
+-config SND_SOC_WM8776
+-	tristate
+-
+-config SND_SOC_WM8900
+-	tristate
+-
+-config SND_SOC_WM8903
+-	tristate
+-
+-config SND_SOC_WM8904
+-	tristate
+-
+-config SND_SOC_WM8940
+-        tristate
+-
+-config SND_SOC_WM8955
+-	tristate
+-
+-config SND_SOC_WM8960
+-	tristate
+-
+-config SND_SOC_WM8961
+-	tristate
+-
+-config SND_SOC_WM8971
+-	tristate
+-
+-config SND_SOC_WM8974
+-	tristate
+-
+-config SND_SOC_WM8978
+-	tristate
+-
+-config SND_SOC_WM8988
+-	tristate
+-
+-config SND_SOC_WM8990
+-	tristate
+-
+-config SND_SOC_WM8993
+-	tristate
+-
+-config SND_SOC_WM8994
+-	tristate
+-
+-config SND_SOC_WM9081
+-	tristate
+-
+-config SND_SOC_WM9705
+-	tristate
+-
+-config SND_SOC_WM9712
+-	tristate
+-
+-config SND_SOC_WM9713
+-	tristate
+-
++choice
++	prompt "WM Codec Support Select"
++	depends on RALINK_GDMA
++	default SND_SOC_WM8960
++	config SND_SOC_WM8750
++		bool "Build WM8750 CODEC drivers"
++	config SND_SOC_WM8960
++		bool "Build WM8960 CODEC drivers"
++endchoice
+ # Amp
+ config SND_SOC_MAX9877
+ 	tristate
+Index: linux-2.6.36/sound/soc/codecs/wm8750.c
+===================================================================
+--- linux-2.6.36.orig/sound/soc/codecs/wm8750.c
++++ linux-2.6.36/sound/soc/codecs/wm8750.c
+@@ -36,7 +36,11 @@
+  * are using 2 wire for device control, so we cache them instead.
+  */
+ static const u16 wm8750_reg[] = {
++#if defined(CONFIG_SND_RALINK_SOC)
++	0x002f, 0x002f, 0x0079, 0x0079,  /*  0 */
++#else
+ 	0x0097, 0x0097, 0x0079, 0x0079,  /*  0 */
++#endif
+ 	0x0000, 0x0008, 0x0000, 0x000a,  /*  4 */
+ 	0x0000, 0x0000, 0x00ff, 0x00ff,  /*  8 */
+ 	0x000f, 0x000f, 0x0000, 0x0000,  /* 12 */
+@@ -56,7 +60,15 @@ struct wm8750_priv {
+ 	u16 reg_cache[ARRAY_SIZE(wm8750_reg)];
+ };
+ 
++#if defined(CONFIG_SND_RALINK_SOC)
++#define wm8750_reset(c)	do{ \
++	int i = 0;\
++	snd_soc_write(c, WM8750_RESET, 0);\
++	for(i = 0; i < 1000*HZ; i++);\
++	}while(0)
++#else
+ #define wm8750_reset(c)	snd_soc_write(c, WM8750_RESET, 0)
++#endif
+ 
+ /*
+  * WM8750 Controls
+@@ -616,6 +628,42 @@ static int wm8750_set_bias_level(struct 
+ 	case SND_SOC_BIAS_PREPARE:
+ 		break;
+ 	case SND_SOC_BIAS_STANDBY:
++#if defined(CONFIG_SND_RALINK_SOC)
++#if defined(CONFIG_I2S_MS_MODE)
++		snd_soc_dai_set_fmt(codec->dai,SND_SOC_DAIFMT_CBS_CFS|SND_SOC_DAIFMT_I2S|SND_SOC_DAIFMT_NB_NF);
++#else
++		snd_soc_dai_set_fmt(codec->dai,SND_SOC_DAIFMT_CBM_CFM|SND_SOC_DAIFMT_I2S|SND_SOC_DAIFMT_NB_NF);
++#endif
++		/* set vmid to 50k and unmute dac */
++		snd_soc_write(codec, WM8750_PWR1, pwr_reg | 0x00c0);
++	//3. Enable DACs as required.
++	snd_soc_write(codec, WM8750_PWR2, (1<<8)|(1<<7)|(1<<6)|(1<<5));
++	/* 4. Enable line and / or headphone output buffers as required. */
++	snd_soc_write(codec,WM8750_ADCTL1, (1 << 0) | (0 << 4) | (3 << 6));
++
++	snd_soc_write(codec,WM8750_ADCTL2, (1 << 2));
++
++	snd_soc_write(codec,WM8750_ADCTL3,(((0) & 0x3) << 7));
++
++	snd_soc_write(codec,WM8750_ROUTM1,0);
++
++	snd_soc_write(codec,WM8750_LOUTM2,0);
++
++	snd_soc_write(codec,WM8750_ROUTM2, (1 << 8));
++	snd_soc_write(codec,WM8750_MOUTM1, 0);
++	snd_soc_write(codec,WM8750_MOUTM2, 0);
++	snd_soc_write(codec,WM8750_ADCDAC, (1 << 0));
++
++	/*Set Input Level*/
++	//snd_soc_write(codec,WM8750_LINVOL, 0x100);
++	//snd_soc_write(codec,WM8750_RINVOL, 0x100);
++
++	snd_soc_write(codec,WM8750_ALC1, 0);
++	snd_soc_write(codec,WM8750_NGATE, 0x03);
++
++	snd_soc_write(codec,WM8750_LADCIN,(0x0 << 6));
++	snd_soc_write(codec,WM8750_RADCIN, (0x0 << 6));
++#else
+ 		if (codec->bias_level == SND_SOC_BIAS_OFF) {
+ 			/* Set VMID to 5k */
+ 			snd_soc_write(codec, WM8750_PWR1, pwr_reg | 0x01c1);
+@@ -626,6 +674,7 @@ static int wm8750_set_bias_level(struct 
+ 
+ 		/* mute dac and set vmid to 500k, enable VREF */
+ 		snd_soc_write(codec, WM8750_PWR1, pwr_reg | 0x0141);
++#endif
+ 		break;
+ 	case SND_SOC_BIAS_OFF:
+ 		snd_soc_write(codec, WM8750_PWR1, 0x0001);
+@@ -692,8 +741,11 @@ static int wm8750_resume(struct platform
+ 		data[1] = cache[i] & 0x00ff;
+ 		codec->hw_write(codec->control_data, data, 2);
+ 	}
+-
++#if defined(CONFIG_SND_RALINK_SOC)
++	wm8750_set_bias_level(codec, SND_SOC_BIAS_ON);
++#else
+ 	wm8750_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
++#endif
+ 
+ 	return 0;
+ }
+@@ -787,15 +839,21 @@ static int wm8750_register(struct wm8750
+ 		printk(KERN_ERR "wm8750: failed to set cache I/O: %d\n", ret);
+ 		goto err;
+ 	}
+-
++#if defined(CONFIG_SND_RALINK_SOC)
++	wm8750_reset(codec);
++#else
+ 	ret = wm8750_reset(codec);
+ 	if (ret < 0) {
+ 		printk(KERN_ERR "wm8750: failed to reset: %d\n", ret);
+ 		goto err;
+ 	}
+-
++#endif
++#if defined(CONFIG_SND_RALINK_SOC)
+ 	/* charge output caps */
++	wm8750_set_bias_level(codec, SND_SOC_BIAS_ON);
++#else
+ 	wm8750_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
++#endif
+ 
+ 	/* set the update bits */
+ 	reg = snd_soc_read(codec, WM8750_LDAC);
+@@ -871,8 +929,11 @@ static int wm8750_i2c_probe(struct i2c_c
+ 	i2c_set_clientdata(i2c, wm8750);
+ 
+ 	codec->dev = &i2c->dev;
+-
++#if defined(CONFIG_SND_RALINK_SOC)
++	return wm8750_register(wm8750, SND_SOC_CUSTOM);
++#else
+ 	return wm8750_register(wm8750, SND_SOC_I2C);
++#endif
+ }
+ 
+ static int wm8750_i2c_remove(struct i2c_client *client)
+Index: linux-2.6.36/sound/soc/codecs/wm8960.c
+===================================================================
+--- linux-2.6.36.orig/sound/soc/codecs/wm8960.c
++++ linux-2.6.36/sound/soc/codecs/wm8960.c
+@@ -57,7 +57,12 @@ struct snd_soc_codec_device soc_codec_de
+  * using 2 wire for device control, so we cache them instead.
+  */
+ static const u16 wm8960_reg[WM8960_CACHEREGNUM] = {
++#if defined(CONFIG_SND_RALINK_SOC)
++	0x002b, 0x002b, 0x00ff, 0x00ff,
++#else
+ 	0x0097, 0x0097, 0x0000, 0x0000,
++#endif
++
+ 	0x0000, 0x0008, 0x0000, 0x000a,
+ 	0x01c0, 0x0000, 0x00ff, 0x00ff,
+ 	0x0000, 0x0000, 0x0000, 0x0000,
+@@ -67,7 +72,11 @@ static const u16 wm8960_reg[WM8960_CACHE
+ 	0x0000, 0x0000, 0x0000, 0x0000,
+ 	0x0100, 0x0100, 0x0050, 0x0050,
+ 	0x0050, 0x0050, 0x0000, 0x0000,
++#if defined(CONFIG_SND_RALINK_SOC)
++	0x007b, 0x007b, 0x0040, 0x0000,
++#else
+ 	0x0000, 0x0000, 0x0040, 0x0000,
++#endif
+ 	0x0000, 0x0050, 0x0050, 0x0000,
+ 	0x0002, 0x0037, 0x004d, 0x0080,
+ 	0x0008, 0x0031, 0x0026, 0x00e9,
+@@ -83,7 +92,15 @@ struct wm8960_priv {
+ 	int playback_fs;
+ };
+ 
++#if defined(CONFIG_SND_RALINK_SOC)
++#define wm8960_reset(c)	do{ \
++	int i = 0;\
++	snd_soc_write(c, WM8960_RESET, 0);\
++	for(i = 0; i < 1000*HZ; i++);\
++	}while(0)
++#else
+ #define wm8960_reset(c)	snd_soc_write(c, WM8960_RESET, 0)
++#endif
+ 
+ /* enumerated controls */
+ static const char *wm8960_polarity[] = {"No Inversion", "Left Inverted",
+@@ -433,7 +450,6 @@ static int wm8960_set_dai_fmt(struct snd
+ {
+ 	struct snd_soc_codec *codec = codec_dai->codec;
+ 	u16 iface = 0;
+-
+ 	/* set master/slave audio interface */
+ 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+ 	case SND_SOC_DAIFMT_CBM_CFM:
+@@ -482,6 +498,7 @@ static int wm8960_set_dai_fmt(struct snd
+ 		return -EINVAL;
+ 	}
+ 
++	//printk("%s:%d iface:%x\n",__func__,__LINE__,iface);
+ 	/* set iface */
+ 	snd_soc_write(codec, WM8960_IFACE1, iface);
+ 	return 0;
+@@ -512,7 +529,7 @@ static int wm8960_hw_params(struct snd_p
+ 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
+ 	u16 iface = snd_soc_read(codec, WM8960_IFACE1) & 0xfff3;
+ 	int i;
+-
++	//printk("hw fmt:%d \n",params_format(params));
+ 	/* bit size */
+ 	switch (params_format(params)) {
+ 	case SNDRV_PCM_FORMAT_S16_LE:
+@@ -546,7 +563,7 @@ static int wm8960_mute(struct snd_soc_da
+ {
+ 	struct snd_soc_codec *codec = dai->codec;
+ 	u16 mute_reg = snd_soc_read(codec, WM8960_DACCTL1) & 0xfff7;
+-
++	//printk("%s:%d mute:%d\n",__func__,__LINE__,mute);
+ 	if (mute)
+ 		snd_soc_write(codec, WM8960_DACCTL1, mute_reg | 0x8);
+ 	else
+@@ -563,6 +580,83 @@ static int wm8960_set_bias_level_out3(st
+ 	case SND_SOC_BIAS_ON:
+ 		break;
+ 
++#ifdef CONFIG_SND_RALINK_SOC
++	case SND_SOC_BIAS_PREPARE:
++	case SND_SOC_BIAS_STANDBY:
++#if defined(CONFIG_I2S_MS_MODE)
++		snd_soc_dai_set_fmt(codec->dai,SND_SOC_DAIFMT_CBS_CFS|SND_SOC_DAIFMT_I2S|SND_SOC_DAIFMT_NB_NF);
++#else
++		snd_soc_write(codec,WM8960_CLOCK2, 0x4);//CLOCKING2_BCLKDIV(0x1c4));  /* CLOCKING2(0x08) */
++		//wmcodec_write(CLOCKING1, 0x05); /* FIXME:0x04*/
++		snd_soc_write(codec,WM8960_CLOCK1, CLOCKING1_SYSCLKDIV_2 | CLOCKING1_CLKSEL_PLL);  /* CLOCKING (0x04) */
++		snd_soc_dai_set_fmt(codec->dai,SND_SOC_DAIFMT_CBM_CFM|SND_SOC_DAIFMT_I2S|SND_SOC_DAIFMT_NB_NF);
++#endif
++		snd_soc_write(codec, WM8960_POWER1,PWRMGMT1_ADCL|PWRMGMT1_ADCR|PWRMGMT1_AINL |PWRMGMT1_AINR|PWRMGMT1_MICB);/* PWRMGMT1(0x19) */
++		//wmcodec_write(PWRMGMT1, 0x3e);
++
++		snd_soc_write(codec, WM8960_IFACE2, 0x40);
++		//wmcodec_write(AINTFCE2, 0x40);
++
++		snd_soc_write(codec, WM8960_ADDCTL1, ADDITIONAL1_DATSEL(0x01));
++		//data = wmcodec_reg_data[ADDITIONAL1];
++		//wmcodec_write(ADDITIONAL1, data|ADDITIONAL1_DATSEL(0x01));
++		//wmcodec_write(LINV, LINV_IPVU|LINV_LINVOL(0x2b));  /* LINV(0x00) */
++		//wmcodec_write(RINV, RINV_IPVU|RINV_RINVOL(0x2b));  /* RINV(0x01) */
++		//wmcodec_write(LADCVOL, LADCVOL_LAVU_EN|LADCVOL_LADCVOL(0xc3)); /* LADCVOL(0x15) */
++		//wmcodec_write(RADCVOL, RADCVOL_RAVU_EN|RADCVOL_RADCVOL(0xc3)); /* RADCVOL(0x16) */
++		snd_soc_write(codec,WM8960_LINPATH, 0x108);//ADCLPATH_LMN1|ADCLPATH_LMP2|ADCLPATH_LMICBOOST_20DB|ADCLPATH_LMIC2B); /* ADCLPATH(0x20)*/
++		//wmcodec_write(ADCLPATH, 0x108);//ADCLPATH_LMN1|ADCLPATH_LMP2|ADCLPATH_LMICBOOST_20DB|ADCLPATH_LMIC2B); /* ADCLPATH(0x20)*/
++		snd_soc_write(codec,WM8960_RINPATH, 0x108);//ADCRPATH_RMN1|ADCRPATH_RMP2|ADCRPATH_RMICBOOST_20DB|ADCRPATH_RMIC2B); /* ADCRPATH(0x21)*/
++		//wmcodec_write(ADCRPATH, 0x108);//ADCRPATH_RMN1|ADCRPATH_RMP2|ADCRPATH_RMICBOOST_20DB|ADCRPATH_RMIC2B); /* ADCRPATH(0x21)*/
++		snd_soc_write(codec,WM8960_POWER3, PWRMGMT3_LMIC|PWRMGMT3_RMIC);
++		//wmcodec_write(PWRMGMT3, PWRMGMT3_LMIC|PWRMGMT3_RMIC); /* PWRMGMT3(0x2f) */
++
++		/* Power management 2 setting */
++		snd_soc_write(codec,WM8960_POWER2, PWRMGMT2_PLL_EN|PWRMGMT2_DACL|PWRMGMT2_DACR|PWRMGMT2_LOUT1|PWRMGMT2_ROUT1|PWRMGMT2_SPKL|PWRMGMT2_SPKR);
++		//data = wmcodec_reg_data[PWRMGMT2];
++		//wmcodec_write(PWRMGMT2, data|PWRMGMT2_PLL_EN|PWRMGMT2_DACL|PWRMGMT2_DACR|PWRMGMT2_LOUT1|PWRMGMT2_ROUT1|PWRMGMT2_SPKL|PWRMGMT2_SPKR); /* PWRMGMT2(0x1a) */
++
++		mdelay(10);
++
++		//wmcodec_write(LEFTGAIN, LEFTGAIN_LDVU|LEFTGAIN_LDACVOL(0xff)); /* LEFTGAIN(0x0a) */
++		//wmcodec_write(RIGHTGAIN, RIGHTGAIN_RDVU|RIGHTGAIN_RDACVOL(0xff)); /* RIGHTGAIN(0x0b)*/
++
++		//wmcodec_write(LOUT1, LOUT1_LO1VU|LOUT1_LO1ZC|LOUT1_LOUT1VOL(0x7f)); /* LOUT1(0x02) */
++		//wmcodec_write(ROUT1, ROUT1_RO1VU|ROUT1_RO1ZC|ROUT1_ROUT1VOL(0x7f)); /* ROUT1(0x03) */
++
++		//wmcodec_write(LSPK, LSPK_SPKLVU|LSPK_SPKLVOL(0x7b)); /* LSPK(0x28) */
++		//wmcodec_write(RSPK, RSPK_SPKRVU|RSPK_SPKRVOL(0x7b)); /* RSPK(0x29) */
++
++		snd_soc_write(codec,WM8960_LOUTMIX, 0x100); /* LEFTMIX1(0x22) */
++		//wmcodec_write(LEFTMIX1, 0x100);  /* LEFTMIX1(0x22) */
++		snd_soc_write(codec,WM8960_ROUTMIX, 0x100); /* RIGHTMIX2(0x25) */
++		//wmcodec_write(RIGHTMIX2, 0x100); /* RIGHTMIX2(0x25) */
++
++		reg = snd_soc_read(codec, WM8960_POWER3);
++		snd_soc_write(codec,WM8960_POWER3, reg|PWRMGMT3_ROMIX|PWRMGMT3_LOMIX);
++		//data = wmcodec_reg_data[PWRMGMT3]; /*FIXME*/
++		//wmcodec_write(PWRMGMT3, data|PWRMGMT3_ROMIX|PWRMGMT3_LOMIX); /* PWRMGMT3(0x2f) */
++
++		snd_soc_write(codec,WM8960_CLASSD1, 0xc0);/* CLASSDCTRL1(0x31) SPEAKER FIXME*/
++		//data = wmcodec_reg_data[CLASSDCTRL1]; /* CLASSDCTRL1(0x31) SPEAKER FIXME*/
++		//wmcodec_write(CLASSDCTRL1, 0xf7);//data|CLASSDCTRL1_OP_LRSPK);
++		snd_soc_write(codec,WM8960_CLASSD3, 0x1b);/* CLASSDCTRL3(0x33) */
++		//data = wmcodec_reg_data[CLASSDCTRL3];	/* CLASSDCTRL3(0x33) */
++		//wmcodec_write(CLASSDCTRL3, 0xad);//data|(0x1b));
++		snd_soc_write(codec,WM8960_DACCTL1,  0x000);/* DACCTRL1(0x05) */
++		//wmcodec_write(DACCTRL1, 0x000);
++#if defined(CONFIG_I2S_MS_MODE)
++		snd_soc_dai_set_fmt(codec->dai,SND_SOC_DAIFMT_CBS_CFS|SND_SOC_DAIFMT_I2S|SND_SOC_DAIFMT_NB_NF);
++#else
++		snd_soc_dai_set_fmt(codec->dai,SND_SOC_DAIFMT_CBM_CFM|SND_SOC_DAIFMT_I2S|SND_SOC_DAIFMT_NB_NF);
++#endif
++		reg = snd_soc_read(codec, WM8960_POWER1);
++		snd_soc_write(codec,WM8960_POWER1, reg|PWRMGMT1_ADCL|PWRMGMT1_ADCR|PWRMGMT1_AINL |PWRMGMT1_AINR|PWRMGMT1_MICB);
++		reg = snd_soc_read(codec, WM8960_POWER1);
++		snd_soc_write(codec, WM8960_POWER1,  reg|0x1c0);/* DACCTRL1(0x05) */
++		//data = wmcodec_reg_data[PWRMGMT1];
++		//wmcodec_write(PWRMGMT1, data|0x1c0); /* FIXME:PWRMGMT1(0x19)*/
++#else
+ 	case SND_SOC_BIAS_PREPARE:
+ 		/* Set VMID to 2x50k */
+ 		reg = snd_soc_read(codec, WM8960_POWER1);
+@@ -596,6 +690,7 @@ static int wm8960_set_bias_level_out3(st
+ 		reg &= ~0x180;
+ 		reg |= 0x100;
+ 		snd_soc_write(codec, WM8960_POWER1, reg);
++#endif
+ 		break;
+ 
+ 	case SND_SOC_BIAS_OFF:
+@@ -621,6 +716,7 @@ static int wm8960_set_bias_level_capless
+ 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
+ 	int reg;
+ 
++	//printk("%s:%d lv:%d\n",__func__,__LINE__,level);
+ 	switch (level) {
+ 	case SND_SOC_BIAS_ON:
+ 		break;
+@@ -727,7 +823,7 @@ static int pll_factors(unsigned int sour
+ 	unsigned long long Kpart;
+ 	unsigned int K, Ndiv, Nmod;
+ 
+-	pr_debug("WM8960 PLL: setting %dHz->%dHz\n", source, target);
++//	printk("WM8960 PLL: setting %dHz->%dHz\n", source, target);
+ 
+ 	/* Scale up target to PLL operating frequency */
+ 	target *= 4;
+@@ -741,7 +837,7 @@ static int pll_factors(unsigned int sour
+ 		pll_div->pre_div = 0;
+ 
+ 	if ((Ndiv < 6) || (Ndiv > 12)) {
+-		pr_err("WM8960 PLL: Unsupported N=%d\n", Ndiv);
++//		printk("WM8960 PLL: Unsupported N=%d\n", Ndiv);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -762,7 +858,7 @@ static int pll_factors(unsigned int sour
+ 
+ 	pll_div->k = K;
+ 
+-	pr_debug("WM8960 PLL: N=%x K=%x pre_div=%d\n",
++	//printk("WM8960 PLL: N=%x K=%x pre_div=%d\n", \
+ 		 pll_div->n, pll_div->k, pll_div->pre_div);
+ 
+ 	return 0;
+@@ -775,7 +871,7 @@ static int wm8960_set_dai_pll(struct snd
+ 	u16 reg;
+ 	static struct _pll_div pll_div;
+ 	int ret;
+-
++	//printk("%s:%d \n",__func__,__LINE__);
+ 	if (freq_in && freq_out) {
+ 		ret = pll_factors(freq_in, freq_out, &pll_div);
+ 		if (ret != 0)
+@@ -795,13 +891,17 @@ static int wm8960_set_dai_pll(struct snd
+ 	reg = snd_soc_read(codec, WM8960_PLL1) & ~0x3f;
+ 	reg |= pll_div.pre_div << 4;
+ 	reg |= pll_div.n;
+-
+ 	if (pll_div.k) {
+ 		reg |= 0x20;
+-
++#ifdef CONFIG_SND_RALINK_SOC
++		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 16) & 0xff);
++		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 8) & 0xff);
++		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0xff);
++#else
+ 		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 18) & 0x3f);
+ 		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 9) & 0x1ff);
+ 		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0x1ff);
++#endif
+ 	}
+ 	snd_soc_write(codec, WM8960_PLL1, reg);
+ 
+@@ -820,7 +920,7 @@ static int wm8960_set_dai_clkdiv(struct 
+ {
+ 	struct snd_soc_codec *codec = codec_dai->codec;
+ 	u16 reg;
+-
++	//printk("%s:%d \n",__func__,__LINE__);
+ 	switch (div_id) {
+ 	case WM8960_SYSCLKDIV:
+ 		reg = snd_soc_read(codec, WM8960_CLOCK1) & 0x1f9;
+@@ -835,7 +935,12 @@ static int wm8960_set_dai_clkdiv(struct 
+ 		snd_soc_write(codec, WM8960_PLL1, reg | div);
+ 		break;
+ 	case WM8960_DCLKDIV:
++#if defined(CONFIG_SND_RALINK_SOC)
++		reg = snd_soc_read(codec, WM8960_CLOCK2) & 0x1ff;
++#else
+ 		reg = snd_soc_read(codec, WM8960_CLOCK2) & 0x03f;
++#endif
++
+ 		snd_soc_write(codec, WM8960_CLOCK2, reg | div);
+ 		break;
+ 	case WM8960_TOCLKSEL:
+@@ -886,7 +991,7 @@ static int wm8960_suspend(struct platfor
+ {
+ 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
+ 	struct snd_soc_codec *codec = socdev->card->codec;
+-
++	printk("%s:%d \n",__func__,__LINE__);
+ 	codec->set_bias_level(codec, SND_SOC_BIAS_OFF);
+ 	return 0;
+ }
+@@ -898,7 +1003,7 @@ static int wm8960_resume(struct platform
+ 	int i;
+ 	u8 data[2];
+ 	u16 *cache = codec->reg_cache;
+-
++	printk("%s:%d \n",__func__,__LINE__);
+ 	/* Sync reg_cache with the hardware */
+ 	for (i = 0; i < ARRAY_SIZE(wm8960_reg); i++) {
+ 		data[0] = (i << 1) | ((cache[i] >> 8) & 0x0001);
+@@ -963,6 +1068,9 @@ struct snd_soc_codec_device soc_codec_de
+ };
+ EXPORT_SYMBOL_GPL(soc_codec_dev_wm8960);
+ 
++extern void audiohw_preinit();
++extern void audiohw_set_apll(int srate);
++extern int audiohw_postinit(int bSlave, int AIn, int AOut, int pll_en);
+ static int wm8960_register(struct wm8960_priv *wm8960,
+ 			   enum snd_soc_control_type control)
+ {
+@@ -977,6 +1085,7 @@ static int wm8960_register(struct wm8960
+ 		goto err;
+ 	}
+ 
++	//printk("%s:%d \n",__func__,__LINE__);
+ 	codec->set_bias_level = wm8960_set_bias_level_out3;
+ 
+ 	if (!pdata) {
+@@ -999,6 +1108,9 @@ static int wm8960_register(struct wm8960
+ 	codec->name = "WM8960";
+ 	codec->owner = THIS_MODULE;
+ 	codec->bias_level = SND_SOC_BIAS_OFF;
++#if defined(CONFIG_SND_RALINK_SOC)
++	wm8960_dai.codec = codec;
++#endif
+ 	codec->dai = &wm8960_dai;
+ 	codec->num_dai = 1;
+ 	codec->reg_cache_size = WM8960_CACHEREGNUM;
+@@ -1011,8 +1123,11 @@ static int wm8960_register(struct wm8960
+ 		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
+ 		goto err;
+ 	}
+-
++#if defined(CONFIG_SND_RALINK_SOC)
++	wm8960_reset(codec);
++#else
+ 	ret = wm8960_reset(codec);
++#endif
+ 	if (ret < 0) {
+ 		dev_err(codec->dev, "Failed to issue reset\n");
+ 		goto err;
+@@ -1057,7 +1172,10 @@ static int wm8960_register(struct wm8960
+ 		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
+ 		goto err_codec;
+ 	}
+-
++	//audiohw_preinit();
++	//audiohw_set_apll(44100);
++	//audiohw_postinit(1, 1, 1, 1);
++	//printk("%s:%d done \n",__func__,__LINE__);
+ 	return 0;
+ 
+ err_codec:
+@@ -1093,7 +1211,7 @@ static __devinit int wm8960_i2c_probe(st
+ 
+ 	codec->dev = &i2c->dev;
+ 
+-	return wm8960_register(wm8960, SND_SOC_I2C);
++	return wm8960_register(wm8960,SND_SOC_CUSTOM);
+ }
+ 
+ static __devexit int wm8960_i2c_remove(struct i2c_client *client)
+Index: linux-2.6.36/sound/soc/codecs/wm8960.h
+===================================================================
+--- linux-2.6.36.orig/sound/soc/codecs/wm8960.h
++++ linux-2.6.36/sound/soc/codecs/wm8960.h
+@@ -110,6 +110,38 @@
+ #define WM8960_OPCLK_DIV_5_5		(4 << 0)
+ #define WM8960_OPCLK_DIV_6		(5 << 0)
+ 
++#ifdef CONFIG_SND_RALINK_SOC
++#define ADDITIONAL1_DATSEL(x)         	(((x) & 0x3) << 2)
++#define PWRMGMT3_LMIC			(1<<5)
++#define PWRMGMT3_RMIC                   (1<<4)
++#define PWRMGMT2_DACL               	(1 << 8)
++#define PWRMGMT2_DACR                   (1 << 7)
++#define PWRMGMT2_LOUT1                  (1 << 6)
++#define PWRMGMT2_ROUT1                  (1 << 5)
++#define PWRMGMT2_SPKL                   (1 << 4)
++#define PWRMGMT2_SPKR                   (1 << 3)
++#define PWRMGMT2_OUT3                   (1 << 1)
++#define PWRMGMT2_PLL_EN                 (1 << 0)
++#define PWRMGMT3_LOMIX                  (1<<3)
++#define PWRMGMT3_ROMIX                  (1<<2)
++#define PWRMGMT1_VMIDSEL_DISABLED   	(0 << 7)
++#define PWRMGMT1_VMIDSEL_50K        	(1 << 7)
++#define PWRMGMT1_VMIDSEL_250K       	(2 << 7)
++#define PWRMGMT1_VMIDSEL_5K         	(3 << 7)
++#define PWRMGMT1_VREF                   (1 << 6)
++#define PWRMGMT1_AINL                   (1 << 5)
++#define PWRMGMT1_AINR                   (1 << 4)
++#define PWRMGMT1_ADCL                   (1 << 3)
++#define PWRMGMT1_ADCR                   (1 << 2)
++#define PWRMGMT1_MICB                   (1 << 1)
++#define PWRMGMT1_DIGENB                 (1 << 0)
++#define AINTFCE1_WL_16               	(0 << 2)
++#define AINTFCE1_FORMAT_I2S             (2 << 0)
++#define CLOCKING1_SYSCLKDIV_2		(2 << 1)
++#define CLOCKING1_CLKSEL_PLL		(1 << 0)
++
++
++#endif
+ extern struct snd_soc_dai wm8960_dai;
+ extern struct snd_soc_codec_device soc_codec_dev_wm8960;
+ 
+Index: linux-2.6.36/sound/soc/mtk/Kconfig
+===================================================================
+--- /dev/null
++++ linux-2.6.36/sound/soc/mtk/Kconfig
+@@ -0,0 +1,14 @@
++config SND_RALINK_SOC
++	tristate "SoC Audio for Ralink SoC"
++	depends on SND_SOC && (RALINK_MT7620 || RALINK_MT7621 || CONFIG_RALINK_MT7628)
++	select I2C
++	select I2C_BOARDINFO
++	select I2C_COMPAT
++	select I2C_CHARDEV
++	select I2C_HELPER_AUTO
++	select I2C_RALINK
++	default y if (RALINK_MT7620=y || RALINK_MT7621=y || CONFIG_RALINK_MT7628=y)
++
++	help
++	  Say Y or M if you want to add support for codecs attached to
++	  the MTK I2S interface.
+Index: linux-2.6.36/sound/soc/mtk/Makefile
+===================================================================
+--- /dev/null
++++ linux-2.6.36/sound/soc/mtk/Makefile
+@@ -0,0 +1,12 @@
++#
++# Jz4740 Platform Support
++#
++
++KBUILD_CFLAGS += -I$(srctree)
++
++snd-soc-mtk-objs := mtk_audio_i2s.o mtk_audio_device.o mtk_audio_pcm.o
++
++obj-$(CONFIG_SND_RALINK_SOC) += snd-soc-mtk.o
++
++
++
+Index: linux-2.6.36/sound/soc/mtk/mtk_audio_device.c
+===================================================================
+--- /dev/null
++++ linux-2.6.36/sound/soc/mtk/mtk_audio_device.c
+@@ -0,0 +1,381 @@
++/*
++ * mtk_gdma_i2s.c
++ *
++ *  Created on: 2013/8/20
++ *      Author: MTK04880
++ */
++#include <linux/init.h>
++#include <linux/version.h>
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,35)
++#include <linux/sched.h>
++#endif
++#include <linux/module.h>
++#include <linux/kernel.h> /* printk() */
++#include <linux/slab.h> /* kmalloc() */
++#include <linux/fs.h> /* everything... */
++#include <linux/errno.h> /* error codes */
++#include <linux/types.h> /* size_t */
++#include <linux/proc_fs.h>
++#include <linux/fcntl.h> /* O_ACCMODE */
++#include <asm/system.h> /* cli(), *_flags */
++#include <asm/uaccess.h> /* copy_from/to_user */
++#include <linux/interrupt.h>
++#include <linux/mm.h>
++#include <linux/dma-mapping.h>
++#include <sound/core.h>
++#include <linux/pci.h>
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++#include <sound/soc.h>
++#include <sound/soc-dapm.h>
++#include <sound/initval.h>
++#include <linux/i2c.h>
++#include <linux/ioport.h>
++#include <linux/delay.h>
++#include "drivers/char/ralink_gdma.h"
++#include "mtk_audio_driver.h"
++#include "mtk_audio_device.h"
++#if defined(CONFIG_SND_SOC_WM8750)
++#include "../codecs/wm8750.h"
++#elif defined(CONFIG_SND_SOC_WM8960)
++#include "../codecs/wm8960.h"
++#endif
++
++/****************************/
++/*FUNCTION DECLRATION		*/
++/****************************/
++extern void i2c_WM8751_write(unsigned int address, unsigned int data);
++extern void snd_soc_free_pcms(struct snd_soc_device *socdev);
++extern void snd_soc_dapm_free(struct snd_soc_device *socdev);
++
++static int mtk_codec_hw_params(struct snd_pcm_substream *substream,\
++				struct snd_pcm_hw_params *params);
++static int mtk_codec_init(struct snd_soc_codec *codec);
++
++/****************************/
++/*GLOBAL VARIABLE DEFINITION*/
++/****************************/
++extern struct snd_soc_dai mtk_audio_drv_dai;
++extern struct snd_soc_platform mtk_soc_platform;
++
++static struct platform_device *mtk_audio_device;
++static struct platform_device *mtk_i2c_device;
++
++#if defined(CONFIG_SND_SOC_WM8750)
++extern struct snd_soc_dai wm8750_dai;
++extern struct snd_soc_codec_device soc_codec_dev_wm8750;
++//static unsigned long i2s_codec_12p288Mhz[11]  = {0x0C,  0x00, 0x10, 0x14,  0x38, 0x38, 0x18,  0x20, 0x00,  0x00, 0x1C};
++//static unsigned long i2s_codec_12Mhz[11]      = {0x0C,  0x32, 0x10, 0x14,  0x37, 0x38, 0x18,  0x22, 0x00,  0x3E, 0x1C};
++//static unsigned long i2s_codec_24p576Mhz[11]  = {0x4C,  0x00, 0x50, 0x54,  0x00, 0x78, 0x58,  0x00, 0x40,  0x00, 0x5C};
++#endif
++
++#if defined(CONFIG_SND_SOC_WM8751)
++//static unsigned long i2s_codec_12p288Mhz[11]  = {0x04,  0x00, 0x10, 0x14,  0x38, 0x38, 0x18,  0x20, 0x00,  0x00, 0x1C};
++//static unsigned long i2s_codec_12Mhz[11]      = {0x04,  0x32, 0x10, 0x14,  0x37, 0x38, 0x18,  0x22, 0x00,  0x3E, 0x1C};
++#endif
++
++#if defined(CONFIG_SND_SOC_WM8960)
++extern struct snd_soc_dai wm8960_dai;
++extern struct snd_soc_codec_device soc_codec_dev_wm8960;
++/*only support 12Mhz*/
++//static unsigned long i2s_codec_12p288Mhz[11]  = {0x36,  0x24, 0x24, 0x1b,  0x12, 0x12, 0x09,  0x00, 0x00,  0x00, 0x00};
++//static unsigned long i2s_codec_12Mhz[11]      = {0x36,  0x24, 0x24, 0x1b,  0x12, 0x12, 0x09,  0x00, 0x00,  0x00, 0x00};
++#endif
++
++/****************************/
++/*STRUCTURE DEFINITION		*/
++/****************************/
++static struct i2c_board_info i2c_board_info[] = {
++	{
++#if defined(CONFIG_SND_SOC_WM8750)
++		I2C_BOARD_INFO("wm8750", 0x18),
++#elif defined(CONFIG_SND_SOC_WM8960)
++		I2C_BOARD_INFO("wm8960", 0x18),
++#endif
++		//.platform_data = &uda1380_info,
++	},
++};
++
++static struct resource i2cdev_resource[] =
++{
++    [0] =
++    {
++        .start = (RALINK_I2C_BASE),
++        .end = (RALINK_I2C_BASE) + (0x40),
++        .flags = IORESOURCE_MEM,
++    },
++};
++
++static struct snd_soc_ops mtk_audio_ops = {
++	.hw_params = mtk_codec_hw_params,
++};
++
++static struct snd_soc_dai_link mtk_audio_dai = {
++	.name = "mtk_dai",
++	.stream_name = "WMserious PCM",
++	.cpu_dai = &mtk_audio_drv_dai,
++#if defined(CONFIG_SND_SOC_WM8750)
++	.codec_dai = &wm8750_dai,
++#elif defined(CONFIG_SND_SOC_WM8960)
++	.codec_dai = &wm8960_dai,
++#endif
++	.init = mtk_codec_init,
++	.ops = &mtk_audio_ops,
++};
++
++static struct snd_soc_card mtk_audio_card = {
++	.name = "mtk_snd",
++	.platform = &mtk_soc_platform,
++	.dai_link = &mtk_audio_dai,//I2S/Codec
++	.num_links = 1,
++};
++
++/*device init: card,codec,codec data*/
++static struct snd_soc_device mtk_audio_devdata = {
++	.card = &mtk_audio_card,
++#if defined(CONFIG_SND_SOC_WM8750)
++	.codec_dev = &soc_codec_dev_wm8750,
++#elif defined(CONFIG_SND_SOC_WM8960)
++	.codec_dev = &soc_codec_dev_wm8960,
++#endif
++	.codec_data = NULL,
++};
++/****************************/
++/*Function Body				*/
++/****************************/
++#if 0
++void wmcodec_write(int reg_addr, unsigned long reg_data)
++{
++	wmcodec_reg_data[reg_addr] = reg_data;
++	printk("[WM875X(%02X)=0x%08X]\n",(unsigned int)reg_addr,(unsigned int)reg_data);
++	i2c_WM8751_write(reg_addr, reg_data);
++	return;
++}
++#endif
++
++unsigned int mtk_i2c_read(struct snd_soc_codec *codec,
++	unsigned int reg)
++{
++	u16 *cache = codec->reg_cache;
++	unsigned int reg_cache_size = codec->reg_cache_size;
++
++	//printk("%s:reg:%x val:%x (limit:%x)\n",__func__,reg,cache[reg],reg_cache_size);
++	if (reg >= reg_cache_size)
++		return -EIO;
++	return cache[reg];
++}
++
++int mtk_i2c_write(struct snd_soc_codec *codec, unsigned int reg,
++	unsigned int val)
++{
++	u16 *cache = codec->reg_cache;
++	unsigned int reg_cache_size = codec->reg_cache_size;
++
++	//printk("%s:reg:%x val:%x (limit:%x)\n",__func__,reg,val,reg_cache_size);
++	if (reg < (reg_cache_size-1))
++		cache[reg] = val;
++	i2c_WM8751_write(reg, val);
++	return 0;
++}
++
++static int mtk_codec_hw_params(struct snd_pcm_substream *substream,
++				struct snd_pcm_hw_params *params)
++{
++	struct snd_soc_pcm_runtime *p = substream->private_data;
++	struct snd_soc_dai *codec_dai = p->dai->codec_dai;
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	i2s_config_type* rtd = runtime->private_data;
++	unsigned long data,index = 0;
++	unsigned long* pTable;
++	int mclk,ret,targetClk = 0;
++
++	//printk("%s:%d -val:%x \n",__func__,__LINE__,params_rate(params));
++#if defined(CONFIG_I2S_MCLK_12MHZ)
++	mclk = 12000000;
++#elif defined(CONFIG_I2S_MCLK_12P288MHZ)
++	mclk = 12288000;
++#else
++	mclk = 12000000;
++#endif
++	snd_soc_dai_set_sysclk(codec_dai,0,mclk, SND_SOC_CLOCK_IN);
++
++
++
++	switch(params_rate(params)){
++	case 8000:
++		index = 0;
++		targetClk = 12288000;
++		break;
++	case 12000:
++		index = 2;
++		targetClk = 12288000;
++		break;
++	case 16000:
++		index = 3;
++		targetClk = 12288000;
++		break;
++	case 24000:
++		index = 5;
++		targetClk = 12288000;
++		break;
++	case 32000:
++		index = 6;
++		targetClk = 12288000;
++		break;
++	case 48000:
++		index = 8;
++		targetClk = 12288000;
++		break;
++	case 11025:
++		index = 1;
++		targetClk = 11289600;
++		break;
++	case 22050:
++		index = 4;
++		targetClk = 11289600;
++		break;
++	case 44100:
++		index = 7;
++		targetClk = 11289600;
++		break;
++	case 88200:
++		index = 9;
++		targetClk = 11289600;
++		break;
++	case 96000:
++		index = 10;
++		targetClk = 11289600;
++		break;
++	default:
++		index = 7;
++		targetClk = 12288000;
++		MSG("audio sampling rate %u should be %d ~ %d Hz\n", (u32)params_rate(params), MIN_SRATE_HZ, MAX_SRATE_HZ);
++		break;
++	}
++#if defined(CONFIG_SND_SOC_WM8960)
++	snd_soc_dai_set_clkdiv(codec_dai, WM8960_OPCLKDIV, (0<<6));
++	/*
++	 * There is a fixed divide by 4 in the PLL and a selectable
++	 * divide by N after the PLL which should be set to divide by 2 to meet this requirement.
++	 * */
++	ret = snd_soc_dai_set_pll(codec_dai, 0, 0,mclk, targetClk*2);
++	/* From app notes: allow Vref to stabilize to reduce clicks */
++	if(rtd->slave_en){
++		ret = snd_soc_dai_set_clkdiv(codec_dai, WM8960_DCLKDIV, 0x4);
++		ret = snd_soc_dai_set_clkdiv(codec_dai, WM8960_SYSCLKDIV, 0x5);
++	}
++#endif
++	if(!rtd->slave_en)
++		snd_soc_dai_set_fmt(codec_dai,SND_SOC_DAIFMT_CBS_CFS|SND_SOC_DAIFMT_I2S|SND_SOC_DAIFMT_NB_NF);
++	else{
++		snd_soc_dai_set_fmt(codec_dai,SND_SOC_DAIFMT_CBM_CFM|SND_SOC_DAIFMT_I2S|SND_SOC_DAIFMT_NB_NF);
++	}
++	mdelay(5);
++
++#if defined(CONFIG_SND_SOC_WM8960)
++#if defined(CONFIG_I2S_MCLK_12MHZ)
++	pTable = i2s_codec_12Mhz;
++	data = pTable[index];
++#else
++	pTable = i2s_codec_12p288Mhz;
++	data = pTable[index];
++#endif
++	if(rtd->codec_pll_en)
++		ret = snd_soc_dai_set_clkdiv(codec_dai, WM8960_DACDIV, (data<<3)|0x5);
++	else
++		ret = snd_soc_dai_set_clkdiv(codec_dai, WM8960_DACDIV, (data<<3)|0x4);
++#endif
++	//audiohw_postinit(1, 0, 1, 1);
++
++	return 0;
++}
++
++static int mtk_codec_init(struct snd_soc_codec *codec)
++{
++#if 0
++	struct snd_soc_dai *codec_dai = &codec->dai[0];
++	int mclk = 0;
++#if defined(CONFIG_I2S_MCLK_12MHZ)
++	mclk = 12000000;
++#elif defined(CONFIG_I2S_MCLK_12P288MHZ)
++	mclk = 12288000;
++#else
++	mclk = 12000000;
++#endif
++	snd_soc_dai_set_sysclk(codec_dai,0,mclk, SND_SOC_CLOCK_IN);
++#endif
++	return 0;
++}
++
++static int __init mtk_soc_device_init(void)
++{
++	//struct snd_soc_device *socdev = &mtk_audio_devdata;
++	struct i2c_adapter *adapter = NULL;
++	struct i2c_client *client = NULL;
++	int ret = 0;
++
++	mtk_audio_device = platform_device_alloc("soc-audio",0);
++	if (mtk_audio_device == NULL) {
++		ret = -ENOMEM;
++		goto err_device_alloc;
++	}
++	platform_set_drvdata(mtk_audio_device, &mtk_audio_devdata);
++	mtk_audio_devdata.dev = &mtk_audio_device->dev;
++
++	ret = platform_device_add(mtk_audio_device);
++	if (ret) {
++		pr_warning("mtk audio device : platform_device_add failed (%d)\n",ret);
++		goto err_device_add;
++	}
++
++	mtk_i2c_device = platform_device_alloc("Ralink-I2C",0);
++	if (mtk_audio_device == NULL) {
++		ret = -ENOMEM;
++		goto err_device_alloc;
++	}
++	mtk_i2c_device->resource = i2cdev_resource;
++	mtk_i2c_device->id = 0;
++	mtk_i2c_device->num_resources = ARRAY_SIZE(i2cdev_resource);
++
++	ret = platform_device_add(mtk_i2c_device);
++	if (ret) {
++		printk("mtk_i2c_device : platform_device_add failed (%d)\n",ret);
++		goto err_device_add;
++	}
++	//mtk_audio_drv_dai.dev = socdev;
++
++	adapter = i2c_get_adapter(0);
++	if (!adapter)
++		return -ENODEV;
++
++	client = i2c_new_device(adapter, i2c_board_info);
++	if (!client)
++		return -ENODEV;
++
++	i2c_put_adapter(adapter);
++	i2c_get_clientdata(client);
++	snd_soc_register_dai(&mtk_audio_drv_dai);
++
++	return 0;
++
++err_device_add:
++	if (mtk_audio_device!= NULL) {
++		platform_device_put(mtk_audio_device);
++		mtk_audio_device = NULL;
++	}
++err_device_alloc:
++	return ret;
++}
++
++
++static void __exit mtk_soc_device_exit(void)
++{
++	platform_device_unregister(mtk_audio_device);
++	snd_soc_unregister_platform(&mtk_soc_platform);
++	mtk_audio_device = NULL;
++}
++
++module_init(mtk_soc_device_init);
++module_exit(mtk_soc_device_exit);
++//EXPORT_SYMBOL_GPL(mtk_soc_platform);
++MODULE_LICENSE("GPL");
+Index: linux-2.6.36/sound/soc/mtk/mtk_audio_device.h
+===================================================================
+--- /dev/null
++++ linux-2.6.36/sound/soc/mtk/mtk_audio_device.h
+@@ -0,0 +1,68 @@
++/*
++ * mtk_audio_device.h
++ *
++ *  Created on: 2013/10/23
++ *      Author: MTK04880
++ */
++
++#ifndef MTK_AUDIO_DEVICE_H_
++#define MTK_AUDIO_DEVICE_H_
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++#include <sound/soc.h>
++#include <sound/soc-dapm.h>
++
++#if defined(CONFIG_I2S_WM8750)
++#undef CONFIG_I2S_WM8750
++#elif defined(CONFIG_I2S_WM8751)
++#undef CONFIG_I2S_WM8751
++#elif defined(CONFIG_I2S_WM8960)
++#undef CONFIG_I2S_WM8960
++#else
++#error "IIS with Unknown Codec?"
++#endif
++
++#ifdef CONFIG_I2S_MMAP
++#undef CONFIG_I2S_MMAP
++#endif
++
++#if 0
++void audiohw_preinit(void);
++void audiohw_postinit(int bSlave, int Ain, int Aout);
++void audiohw_close(void);
++void audiohw_set_frequency(int fsel);
++void audiohw_set_MCLK(unsigned int bUsb);
++void audiohw_mute(bool mute);
++#else
++#define audiohw_preinit()
++#define audiohw_postinit(a,b,c)
++#define audiohw_close()
++#define audiohw_set_frequency(a)
++#define audiohw_set_MCLK(a);
++#define audiohw_mute(a)
++#define audiohw_set_frequency(a)
++#define audiohw_set_lineout_vol(a,b,c);
++#define audiohw_set_linein_vol(a,b)
++#if 1
++#if defined(CONFIG_SND_SOC_WM8750)
++static unsigned long i2s_codec_12p288Mhz[11]  = {0x0C,  0x00, 0x10, 0x14,  0x38, 0x38, 0x18,  0x20, 0x00,  0x00, 0x1C};
++static unsigned long i2s_codec_12Mhz[11]      = {0x0C,  0x32, 0x10, 0x14,  0x37, 0x38, 0x18,  0x22, 0x00,  0x3E, 0x1C};
++static unsigned long i2s_codec_24p576Mhz[11]  = {0x4C,  0x00, 0x50, 0x54,  0x00, 0x78, 0x58,  0x00, 0x40,  0x00, 0x5C};
++#endif
++
++#if defined(CONFIG_SND_SOC_WM8751)
++static unsigned long i2s_codec_12p288Mhz[11]  = {0x04,  0x00, 0x10, 0x14,  0x38, 0x38, 0x18,  0x20, 0x00,  0x00, 0x1C};
++static unsigned long i2s_codec_12Mhz[11]      = {0x04,  0x32, 0x10, 0x14,  0x37, 0x38, 0x18,  0x22, 0x00,  0x3E, 0x1C};
++#endif
++
++#if defined(CONFIG_SND_SOC_WM8960)
++static unsigned long i2s_codec_12p288Mhz[11]  = {0x36,  0x24, 0x24, 0x1b,  0x12, 0x12, 0x09,  0x00, 0x00,  0x00, 0x00};
++static unsigned long i2s_codec_12Mhz[11]      = {0x36,  0x24, 0x24, 0x1b,  0x12, 0x12, 0x09,  0x00, 0x00,  0x00, 0x00};
++#endif
++#endif
++
++
++#endif
++
++
++#endif /* MTK_AUDIO_DEVICE_H_ */
+Index: linux-2.6.36/sound/soc/mtk/mtk_audio_driver.h
+===================================================================
+--- /dev/null
++++ linux-2.6.36/sound/soc/mtk/mtk_audio_driver.h
+@@ -0,0 +1,359 @@
++/*
++ * mtk_i2s.h
++ *
++ *  Created on: 2013/8/20
++ *      Author: MTK04880
++ */
++
++#ifndef MTK_I2S_H_
++#define MTK_I2S_H_
++
++
++#ifdef __KERNEL__
++#include <asm/mach-ralink/rt_mmap.h>
++#include <linux/fs.h>
++#endif
++
++#if 1
++#include "drivers/char/i2s/i2s_ctrl.h"
++#else
++
++#define I2S_MAX_DEV			1
++#define I2S_MOD_VERSION			"1.0"
++#define phys_to_bus(a) (a & 0x1FFFFFFF)
++
++#ifndef u32
++#define u32 unsigned int
++#endif
++
++#ifndef u16
++#define u16 unsigned short
++#endif
++
++#ifndef u8
++#define u8 unsigned char
++#endif
++
++#ifndef REGBIT
++#define REGBIT(x, n)		(x << n)
++#endif
++
++#define Virtual2Physical(x)             (((int)x) & 0x1fffffff)
++#define Physical2Virtual(x)             (((int)x) | 0x80000000)
++#define Virtual2NonCache(x)             (((int)x) | 0x20000000)
++#define Physical2NonCache(x)            (((int)x) | 0xa0000000)
++#define NonCache2Virtual(x)             (((int)x) & 0xDFFFFFFF)
++
++
++
++#define CONFIG_I2S_CODEC_PLL_EN		1
++
++//#define MT7621_ASIC_BOARD
++#if defined(MT7621_ASIC_BOARD)
++#define REF_CLK_40MHZ
++//#define REF_CLK_25MHZ
++//#define REF_CLK_20MHZ
++#endif
++
++#define I2S_DEBUG_PRN
++#ifdef I2S_DEBUG_PRN
++#define MSG(fmt, args...) printk("I2S: " fmt, ## args)
++#else
++#define MSG(fmt, args...) { }
++#endif
++
++#ifdef I2S_DEBUG_PRN
++#define i2s_outw(address, value)	do{printk("0x%08X = 0x%08X\n",(u32)address,(u32)value);*((volatile uint32_t *)(address)) = cpu_to_le32(value);}while(0)
++#else
++#define i2s_outw(address, value)    *((volatile uint32_t *)(address)) = cpu_to_le32(value)
++#endif
++#define i2s_inw(address)			le32_to_cpu(*(volatile u32 *)(address))
++
++/* HW feature definiations */
++#if defined(CONFIG_RALINK_RT3883)
++#define CONFIG_I2S_TXRX			1
++#define CONFIG_I2S_IN_MCLK		1
++//#define CONFIG_I2S_WS_EDGE		1
++#define CONFIG_I2S_FRAC_DIV		1
++#define CONFIG_I2S_EXTENDCFG	1
++#define CONFIG_I2S_IN_CLK		1
++#define CONFIG_I2S_MS_MODE		1
++#endif
++
++#if defined(CONFIG_RALINK_RT3352)||defined(CONFIG_RALINK_RT5350) || defined (CONFIG_RALINK_RT6855) \
++	|| defined(CONFIG_RALINK_RT6855A) || defined(CONFIG_RALINK_MT7620) || defined(CONFIG_RALINK_MT7621)
++
++#define CONFIG_I2S_TXRX			1
++//#define CONFIG_I2S_IN_MCLK		1
++//#define CONFIG_I2S_WS_EDGE		1
++#define CONFIG_I2S_FRAC_DIV		1
++#define CONFIG_I2S_EXTENDCFG	1
++#define CONFIG_I2S_IN_CLK		1
++#endif
++
++#if defined(CONFIG_RALINK_RT3350)
++#define CONFIG_I2S_IN_MCLK	1
++#endif
++
++#if defined(CONFIG_RALINK_RT3052)
++#define CONFIG_I2S_MS_MODE		1
++#endif
++
++//#define CONFIG_I2S_MMAP           1
++
++/* Register Map, Ref to RT3052 Data Sheet */
++
++/* Register Map Detail */
++#define I2S_I2SCFG				(RALINK_I2S_BASE+0x0000)
++#define I2S_INT_STATUS			(RALINK_I2S_BASE+0x0004)
++#define I2S_INT_EN				(RALINK_I2S_BASE+0x0008)
++#define I2S_FF_STATUS			(RALINK_I2S_BASE+0x000c)
++#define I2S_FIFO_WREG			(RALINK_I2S_BASE+0x0010)
++#define I2S_TX_FIFO_WREG		I2S_FIFO_WREG
++#define I2S_RX_FIFO_RREG		(RALINK_I2S_BASE+0x0014)
++#define I2S_I2SCFG1				(RALINK_I2S_BASE+0x0018)
++#define I2S_DIVINT_CFG			(RALINK_I2S_BASE+0x0024)
++#define I2S_DIVCOMP_CFG			(RALINK_I2S_BASE+0x0020)
++
++
++
++/* I2SCFG bit field */
++#define I2S_EN				31
++#define I2S_DMA_EN			30
++#define I2S_BYTE_SWAP			28
++#define I2S_CLK_OUT_DIS		8
++#define I2S_FF_THRES		4
++#define I2S_CH_SWAP			3
++#define I2S_CH1_OFF			2
++#define I2S_CH0_OFF			1
++#define I2S_SLAVE_EN		0
++#define I2S_TX_EN			24
++#define I2S_RX_EN			20
++#define I2S_SLAVE_MODE		16
++#define I2S_RX_FF_THRES		12
++#define I2S_RX_CH_SWAP		11
++#define I2S_RX_CH1_OFF		10
++#define I2S_RX_CH0_OFF		9
++#define I2S_TX_FF_THRES		4
++#define I2S_TX_CH_SWAP		3
++#define I2S_TX_CH1_OFF		2
++#define I2S_TX_CH0_OFF		1
++#define I2S_WS_INV			0
++/* INT_EN bit field */
++#define I2S_RX_INT3_EN			7
++#define I2S_RX_INT2_EN			6
++#define I2S_RX_INT1_EN			5
++#define I2S_RX_INT0_EN			4
++#define I2S_TX_INT3_EN			3
++#define I2S_TX_INT2_EN			2
++#define I2S_TX_INT1_EN			1
++#define I2S_TX_INT0_EN			0
++
++/* INT_STATUS bit field */
++#define I2S_RX_DMA_FAULT		7
++#define I2S_RX_OVRUN			6
++#define I2S_RX_UNRUN			5
++#define I2S_RX_THRES			4
++#define I2S_TX_DMA_FAULT		3
++#define I2S_TX_OVRUN			2
++#define I2S_TX_UNRUN			1
++#define I2S_TX_THRES			0
++
++/* FF_STATUS bit field */
++#define I2S_RX_EPCNT			4
++#define I2S_TX_EPCNT			0
++/* I2S_DIVCOMP_CFG bit field */
++#define I2S_CLKDIV_EN				31
++
++/* I2S_CFG1 bit field */
++#define I2S_LBK_EN				31
++#define I2S_EXT_LBK_EN			30
++#define I2S_DATA_FMT			0
++
++/* FIFO_WREG bit field */
++#define I2S_FIFO_WDATA		0
++
++/* Constant definition */
++#define NFF_THRES			4
++#define I2S_PAGE_SIZE		(3*4096)//(1152*2*2*2)
++#define MAX_I2S_PAGE		8
++
++#define MAX_SRATE_HZ			96000
++#define MIN_SRATE_HZ			8000
++
++#define MAX_VOL_DB				+0
++#define MIN_VOL_DB				-127
++
++/* I2S I/O command */
++#define I2S_SRATE				0
++#define I2S_VOL					1
++#define I2S_ENABLE				2
++#define I2S_DISABLE				3
++#define I2S_TX_ENABLE				2
++#define I2S_TX_DISABLE				3
++#define I2S_GET_WBUF			4
++#define I2S_PUT_WBUF			5
++#define I2S_RX_ENABLE			6
++#define I2S_RX_DISABLE			7
++#define I2S_PUT_AUDIO		4
++#define I2S_GET_AUDIO			5
++#define I2S_TX_VOL				1
++#define I2S_RX_VOL				8
++
++#define I2S_DEBUG				20
++#define I2S_DEBUG_CLKGEN		20
++#define I2S_DEBUG_INLBK			21
++#define I2S_DEBUG_EXLBK			22
++#define I2S_DEBUG_FMT			23
++#define I2S_DEBUG_RESET			24
++#define I2S_DEBUG_CODECBYPASS	25
++
++/* configuration */
++#define CONFIG_I2S_TFF_THRES					NFF_THRES
++#define CONFIG_I2S_CH_SWAP					0
++#if defined(CONFIG_I2S_MS_MODE)
++#define CONFIG_I2S_SLAVE_EN					0
++#else
++#define CONFIG_I2S_SLAVE_EN					1
++#endif
++
++
++#define CONFIG_I2S_INLBK					0
++#define CONFIG_I2S_EXLBK					0
++#define CONFIG_I2S_FMT						0
++
++/* driver status definition */
++#define I2S_OK						0
++#define I2S_OUTOFMEM				0x01
++#define I2S_GDMAFAILED				0x02
++#define I2S_REQUEST_IRQ_FAILED		0x04
++#define I2S_REG_SETUP_FAILED		0x08
++
++//#define I2S_FIFO_MODE		1
++#define I2S_STATISTIC
++#define I2S_MAJOR			234
++
++// define sampling rate
++#define MTK_I2S_SMP_RATE_8000 (1<<0)
++#define MTK_I2S_SMP_RATE_16000 (1<<1)
++#define MTK_I2S_SMP_RATE_32000 (1<<2)
++#define MTK_I2S_SMP_RATE_44100 (1<<3)
++#define MTK_I2S_SMP_RATE_48000 (1<<4)
++
++typedef struct i2s_status_t
++{
++	u32 txdmafault;
++	u32 txovrun;
++	u32 txunrun;
++	u32 txthres;
++	int txbuffer_unrun;
++	int txbuffer_ovrun;
++	int txbuffer_len;
++
++	u32 rxdmafault;
++	u32 rxovrun;
++	u32 rxunrun;
++	u32 rxthres;
++	int rxbuffer_unrun;
++	int rxbuffer_ovrun;
++	int rxbuffer_len;
++}i2s_status_type;
++
++
++typedef struct audio_config_s
++{
++
++	int srate;
++	int txvol;
++	int rxvol;
++	u32	pos;
++	u32 flag;
++	u32	tx_isr_cnt;
++	u32	rx_isr_cnt;
++	int bSleep;
++	int bTxDMAEnable;
++	int bRxDMAEnable;
++	int nTxDMAStopped;
++	int nRxDMAStopped;
++#ifdef __KERNEL__
++	spinlock_t lock;
++	wait_queue_head_t i2s_tx_qh, i2s_rx_qh;
++	struct snd_pcm_substream *pss;
++#endif
++	u32 dmach;
++	u32 dma_unmask_status;
++	u32 dma_done_status;
++	u32 tx_ff_thres;
++	u32 tx_ch_swap;
++	u32 rx_ff_thres;
++	u32 rx_ch_swap;
++	u32 slave_en;
++	int codec_pll_en;
++	int codec_num;
++
++	/* for I2S_CFG1 */
++	u32 lbk;
++	u32	extlbk;
++	u32 fmt;
++
++	int w_idx;
++	int r_idx;
++
++	int tx_w_idx;
++	int tx_r_idx;
++	int rx_w_idx;
++	int rx_r_idx;
++	int mmap_index;
++
++	u8* buf8ptr;
++
++	char* pMMAPBufPtr[MAX_I2S_PAGE*2];
++	char* pMMAPTxBufPtr[MAX_I2S_PAGE];
++	char* pMMAPRxBufPtr[MAX_I2S_PAGE];
++	union {
++		u16* pPage0TxBuf16Ptr;
++		u8* pPage0TxBuf8ptr;
++	};
++	union {
++		u16* pPage1TxBuf16Ptr;
++		u8* pPage1TxBuf8ptr;
++	};
++
++	union {
++		u16* pPage0RxBuf16Ptr;
++		u8* pPage0RxBuf8ptr;
++	};
++	union {
++		u16* pPage1RxBuf16Ptr;
++		u8* pPage1RxBuf8ptr;
++	};
++
++}audio_config_t;
++
++
++int i2s_reset_tx_config(audio_config_t* ptri2s_config);
++int i2s_reset_rx_config(audio_config_t* ptri2s_config);
++int i2s_tx_config(audio_config_t* ptri2s_config);
++int i2s_rx_config(audio_config_t* ptri2s_config);
++int i2s_tx_enable(audio_config_t* ptri2s_config);
++int i2s_tx_disable(audio_config_t* ptri2s_config);
++int i2s_rx_enable(audio_config_t* ptri2s_config);
++int i2s_rx_disable(audio_config_t* ptri2s_config);
++int i2s_codec_enable(audio_config_t* ptri2s_config);
++int i2s_codec_disable(audio_config_t* ptri2s_config);
++int i2s_clock_enable(audio_config_t* ptri2s_config);
++int i2s_clock_disable(audio_config_t* ptri2s_config);
++void i2s_dma_tx_handler(u32 dma_ch);
++void i2s_dma_rx_handler(u32 dma_ch);
++void i2s_unmask_handler(u32 dma_ch);
++
++#if !defined(CONFIG_I2S_TXRX)
++#define GdmaI2sRx	//GdmaI2sRx
++#endif
++
++#define RALINK_I2S_VERSION	"1.0"
++#define I2SDRV_DEVNAME		"i2s0"
++
++#endif
++
++#endif /* MTK_I2S_H_ */
+Index: linux-2.6.36/sound/soc/mtk/mtk_audio_i2s.c
+===================================================================
+--- /dev/null
++++ linux-2.6.36/sound/soc/mtk/mtk_audio_i2s.c
+@@ -0,0 +1,355 @@
++/*
++ * mtk_audio_drv.c
++ *
++ *  Created on: 2013/8/20
++ *      Author: MTK04880
++ */
++#include <linux/init.h>
++#include <linux/version.h>
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,35)
++#include <linux/sched.h>
++#endif
++#include <linux/module.h>
++#include <linux/kernel.h> /* printk() */
++#include <linux/slab.h> /* kmalloc() */
++#include <linux/fs.h> /* everything... */
++#include <linux/errno.h> /* error codes */
++#include <linux/types.h> /* size_t */
++#include <linux/proc_fs.h>
++#include <linux/fcntl.h> /* O_ACCMODE */
++#include <asm/system.h> /* cli(), *_flags */
++#include <asm/uaccess.h> /* copy_from/to_user */
++#include <linux/interrupt.h>
++#include <linux/mm.h>
++#include <linux/dma-mapping.h>
++#include <sound/core.h>
++#include <linux/pci.h>
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++#include <sound/soc.h>
++#include <sound/soc-dapm.h>
++#include <sound/initval.h>
++#include "drivers/char/ralink_gdma.h"
++#include "mtk_audio_driver.h"
++
++/****************************/
++/*GLOBAL VARIABLE DEFINITION*/
++/****************************/
++#if 0
++i2s_config_type* pAudio_config;
++i2s_status_type* pi2s_status;
++
++unsigned long i2sMaster_inclk_15p625Mhz[11] = {60<<8, 	43<<8, 		40<<8, 	 30<<8, 	21<<8, 		19<<8, 	 14<<8,    10<<8, 	9<<8, 	 7<<8, 	  4<<8};
++unsigned long i2sMaster_exclk_12p288Mhz[11] = {47<<8, 	34<<8, 		31<<8,   23<<8, 	16<<8, 		15<<8, 	 11<<8,    8<<8, 	7<<8, 	 5<<8, 	  3<<8};
++unsigned long i2sMaster_exclk_12Mhz[11]     = {46<<8, 	33<<8, 		30<<8,   22<<8, 	16<<8, 		15<<8, 	 11<<8,    8<<8,  	7<<8, 	 5<<8, 	  3<<8};
++
++#if defined(CONFIG_RALINK_RT6855A)
++unsigned long i2sMaster_inclk_int[11] = {97, 70, 65, 48, 35, 32, 24, 17, 16, 12, 8};
++unsigned long i2sMaster_inclk_comp[11] = {336, 441, 53, 424, 220, 282, 212, 366, 141, 185, 70};
++#elif defined (CONFIG_RALINK_MT7621)
++#ifdef MT7621_ASIC_BOARD
++				        /*  8K  11.025k 12k  16k  22.05k  24k  32k  44.1K  48k  88.2k  96k */
++unsigned long i2sMaster_inclk_int[11] = {  576,   384,   0,  288,  192,   192, 144,   96,   96,   48,  48};
++unsigned long i2sMaster_inclk_comp[11] = {  0,     0,    0,   0,   0,      0,   0,    0,    0,     0,   0};
++
++#else
++					/* 8K  11.025k 12k  16k  22.05k  24k   32k  44.1K  48k  88.2k  96k */
++unsigned long i2sMaster_inclk_int[11] = { 529,   384,   0,  264,  192,   176,  132,   96,   88,   48,   44};
++unsigned long i2sMaster_inclk_comp[11] = {102,    0,    0,  307,   0,    204,  153,    0,  102,    0,   51};
++#endif
++#else
++unsigned long i2sMaster_inclk_int[11] = {78, 56, 52, 39, 28, 26, 19, 14, 13, 9, 6};
++unsigned long i2sMaster_inclk_comp[11] = {64, 352, 42, 32, 176, 21, 272, 88, 10, 455, 261};
++//unsigned long i2sMaster_inclk_int[11] = {78, 56, 52, 39, 28, 26, 19, 14, 13, 7, 6};
++//unsigned long i2sMaster_inclk_comp[11] = {64, 352, 42, 32, 176, 21, 272, 88, 10, 44, 261};
++#endif
++#else
++extern i2s_config_type* pi2s_config;
++#endif
++
++/****************************/
++/*FUNCTION DECLRATION		*/
++/****************************/
++#if 0
++static int mtk_audio_drv_pbVol_get(struct snd_kcontrol *kcontrol,\
++	struct snd_ctl_elem_value *ucontrol);
++static int mtk_audio_drv_pbVol_set(struct snd_kcontrol *kcontrol,\
++	struct snd_ctl_elem_value *ucontrol);
++static int mtk_audio_drv_recVol_get(struct snd_kcontrol *kcontrol,\
++	struct snd_ctl_elem_value *ucontrol);
++static int mtk_audio_drv_recVol_set(struct snd_kcontrol *kcontrol,\
++	struct snd_ctl_elem_value *ucontrol);
++#endif
++static int mtk_audio_drv_set_fmt(struct snd_soc_dai *cpu_dai,\
++		unsigned int fmt);
++
++static int  mtk_audio_drv_shutdown(struct snd_pcm_substream *substream,
++		       struct snd_soc_dai *dai);
++static int  mtk_audio_drv_startup(struct snd_pcm_substream *substream,
++		       struct snd_soc_dai *dai);
++static int mtk_audio_hw_params(struct snd_pcm_substream *substream,\
++				struct snd_pcm_hw_params *params,\
++				struct snd_soc_dai *dai);
++static int mtk_audio_drv_play_prepare(struct snd_pcm_substream *substream,struct snd_soc_dai *dai);
++static int mtk_audio_drv_rec_prepare(struct snd_pcm_substream *substream,struct snd_soc_dai *dai);
++static int mtk_audio_drv_hw_free(struct snd_pcm_substream *substream,struct snd_soc_dai *dai);
++static int mtk_audio_drv_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *dai);
++
++
++/****************************/
++/*STRUCTURE DEFINITION		*/
++/****************************/
++
++
++static struct snd_soc_dai_ops mtk_audio_drv_dai_ops = {
++	.startup = mtk_audio_drv_startup,
++	.hw_params	= mtk_audio_hw_params,
++	.hw_free = mtk_audio_drv_hw_free,
++	//.shutdown = mtk_audio_drv_shutdown,
++	.prepare = mtk_audio_drv_prepare,
++	.set_fmt = mtk_audio_drv_set_fmt,
++	//.set_sysclk = mtk_audio_drv_set_sysclk,
++};
++
++struct snd_soc_dai mtk_audio_drv_dai = {
++	.name = "mtk-i2s",
++	.playback = {
++		.channels_min = 1,
++		.channels_max = 2,
++		.rates = (SNDRV_PCM_RATE_8000|SNDRV_PCM_RATE_11025|SNDRV_PCM_RATE_12000|\
++		SNDRV_PCM_RATE_16000|SNDRV_PCM_RATE_22050|SNDRV_PCM_RATE_24000|SNDRV_PCM_RATE_32000|\
++		SNDRV_PCM_RATE_44100|SNDRV_PCM_RATE_48000),
++
++		.formats = (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE |\
++				SNDRV_PCM_FMTBIT_S24_LE),
++	},
++	.capture = {
++		.channels_min = 1,
++		.channels_max = 2,
++		.rates = (SNDRV_PCM_RATE_8000|SNDRV_PCM_RATE_11025|SNDRV_PCM_RATE_12000|\
++				SNDRV_PCM_RATE_16000|SNDRV_PCM_RATE_22050|SNDRV_PCM_RATE_24000|SNDRV_PCM_RATE_32000|\
++				SNDRV_PCM_RATE_44100|SNDRV_PCM_RATE_48000),
++		.formats = (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE |\
++				SNDRV_PCM_FMTBIT_S24_LE),
++	},
++	.symmetric_rates = 1,
++	.ops = &mtk_audio_drv_dai_ops,
++};
++
++/****************************/
++/*FUNCTION BODY				*/
++/****************************/
++
++static int mtk_audio_drv_set_fmt(struct snd_soc_dai *cpu_dai,
++		unsigned int fmt)
++{//TODO
++#if 0
++	unsigned long mask;
++	unsigned long value;
++
++	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
++	case SND_SOC_DAIFMT_RIGHT_J:
++		mask = KIRKWOOD_I2S_CTL_RJ;
++		break;
++	case SND_SOC_DAIFMT_LEFT_J:
++		mask = KIRKWOOD_I2S_CTL_LJ;
++		break;
++	case SND_SOC_DAIFMT_I2S:
++		mask = KIRKWOOD_I2S_CTL_I2S;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	/*
++	 * Set same format for playback and record
++	 * This avoids some troubles.
++	 */
++	value = readl(priv->io+KIRKWOOD_I2S_PLAYCTL);
++	value &= ~KIRKWOOD_I2S_CTL_JUST_MASK;
++	value |= mask;
++	writel(value, priv->io+KIRKWOOD_I2S_PLAYCTL);
++
++	value = readl(priv->io+KIRKWOOD_I2S_RECCTL);
++	value &= ~KIRKWOOD_I2S_CTL_JUST_MASK;
++	value |= mask;
++	writel(value, priv->io+KIRKWOOD_I2S_RECCTL);
++#endif
++	return 0;
++}
++
++static int mtk_audio_drv_play_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
++{
++	i2s_config_type* rtd = (i2s_config_type*)substream->runtime->private_data;
++	rtd->pss = substream;
++	i2s_reset_tx_param( rtd);
++	// rtd->bTxDMAEnable = 1;
++	i2s_tx_config( rtd);
++
++	if( rtd->bRxDMAEnable==0)
++		i2s_clock_enable( rtd);
++#if 0
++	audiohw_set_lineout_vol(1,  rtd->txvol,  rtd->txvol);
++#endif
++	//data = i2s_inw(RALINK_REG_INTENA);
++	//data |=0x0400;
++	//i2s_outw(RALINK_REG_INTENA, data);
++	i2s_tx_enable( rtd);
++	MSG("I2S_TXENABLE done\n");
++
++	return 0;
++}
++
++static int mtk_audio_drv_rec_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
++{
++	i2s_config_type* rtd = (i2s_config_type*)substream->runtime->private_data;
++	rtd->pss = substream;
++	i2s_reset_rx_param(rtd);
++	//rtd->bRxDMAEnable = 1;
++	i2s_rx_config(rtd);
++
++	if(rtd->bTxDMAEnable==0)
++		i2s_clock_enable(rtd);
++
++#if 0
++#if defined(CONFIG_I2S_TXRX)
++	audiohw_set_linein_vol(rtd->rxvol,  rtd->rxvol);
++#endif
++#endif
++	i2s_rx_enable(rtd);
++
++	//data = i2s_inw(RALINK_REG_INTENA);
++	//data |=0x0400;
++	//i2s_outw(RALINK_REG_INTENA, data);
++	return 0;
++}
++
++static int  mtk_audio_drv_shutdown(struct snd_pcm_substream *substream,
++		       struct snd_soc_dai *dai)
++{
++	//i2s_config_type* rtd = (i2s_config_type*)substream->runtime->private_data;
++	MSG("%s :%d \n",__func__,__LINE__);
++	return 0;
++}
++
++static int  mtk_audio_drv_startup(struct snd_pcm_substream *substream,
++		       struct snd_soc_dai *dai)
++{
++#if 0
++	/* set i2s_config */
++	pAudio_config = (i2s_config_type*)kmalloc(sizeof(i2s_config_type), GFP_KERNEL);
++	if(pAudio_config==NULL)
++		return -1;
++	memset(pAudio_config, 0, sizeof(i2s_config_type));
++
++#ifdef I2S_STATISTIC
++	pi2s_status = (i2s_status_type*)kmalloc(sizeof(i2s_status_type), GFP_KERNEL);
++	if(pi2s_status==NULL)
++		return -1;
++	memset(pi2s_status, 0, sizeof(i2s_status_type));
++#endif
++
++	//i2s_config_type* rtd = (i2s_config_type*)substream->runtime->private_data;
++	MSG("func: %s:LINE:%d \n",__func__,__LINE__);
++	pAudio_config->flag = 0;
++	pAudio_config->dmach = GDMA_I2S_TX0;
++	pAudio_config->tx_ff_thres = CONFIG_I2S_TFF_THRES;
++	pAudio_config->tx_ch_swap = CONFIG_I2S_CH_SWAP;
++	pAudio_config->rx_ff_thres = CONFIG_I2S_TFF_THRES;
++	pAudio_config->rx_ch_swap = CONFIG_I2S_CH_SWAP;
++	pAudio_config->slave_en = CONFIG_I2S_SLAVE_EN;
++
++	pAudio_config->srate = 44100;
++	pAudio_config->txvol = 96;
++	pAudio_config->rxvol = 60;
++	pAudio_config->lbk = CONFIG_I2S_INLBK;
++	pAudio_config->extlbk = CONFIG_I2S_EXLBK;
++	pAudio_config->fmt = CONFIG_I2S_FMT;
++
++    init_waitqueue_head(&(pAudio_config->i2s_tx_qh));
++    init_waitqueue_head(&(pAudio_config->i2s_rx_qh));
++#else
++    i2s_open(NULL,NULL);
++    if(!pi2s_config)
++    	return -1;
++#endif
++	substream->runtime->private_data = pi2s_config;
++	return 0;
++}
++static int mtk_audio_hw_params(struct snd_pcm_substream *substream,\
++				struct snd_pcm_hw_params *params,\
++				struct snd_soc_dai *dai){
++	unsigned int srate = 0;
++	unsigned long data;
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	i2s_config_type* rtd = runtime->private_data;
++
++	//printk("func: %s:LINE:%d \n",__func__,__LINE__);
++	switch(params_rate(params)){
++	case 8000:
++		srate = 8000;
++		break;
++	case 16000:
++		srate = 16000;
++		break;
++	case 32000:
++		srate = 32000;
++		break;
++	case 44100:
++		srate = 44100;
++		break;
++	case 48000:
++		srate = 48000;
++		break;
++	default:
++		srate = 44100;
++		MSG("audio sampling rate %u should be %d ~ %d Hz\n", (u32)params_rate(params), MIN_SRATE_HZ, MAX_SRATE_HZ);
++		break;
++	}
++	if(srate){
++		i2s_reset_config(rtd);
++		rtd->srate = srate;
++		MSG("set audio sampling rate to %d Hz\n", rtd->srate);
++	}
++
++	return 0;
++}
++static int mtk_audio_drv_hw_free(struct snd_pcm_substream *substream,struct snd_soc_dai *dai){
++
++	i2s_config_type* rtd = (i2s_config_type*)substream->runtime->private_data;
++	//MSG("%s %d \n",__func__,__LINE__);
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++		//if(rtd->bTxDMAEnable==1){
++			MSG("I2S_TXDISABLE\n");
++			i2s_reset_tx_param(rtd);
++
++			//if (rtd->nTxDMAStopped<4)
++			//	interruptible_sleep_on(&(rtd->i2s_tx_qh));
++			i2s_tx_disable(rtd);
++			if((rtd->bRxDMAEnable==0)&&(rtd->bTxDMAEnable==0))
++				i2s_clock_disable(rtd);
++		//}
++	}
++	else{
++		//if(rtd->bRxDMAEnable==1){
++			MSG("I2S_RXDISABLE\n");
++			i2s_reset_rx_param(rtd);
++			//spin_unlock(&rtd->lock);
++			//if(rtd->nRxDMAStopped<2)
++			//	interruptible_sleep_on(&(rtd->i2s_rx_qh));
++			i2s_rx_disable(rtd);
++			if((rtd->bRxDMAEnable==0)&&(rtd->bTxDMAEnable==0))
++				i2s_clock_disable(rtd);
++		//}
++	}
++	return 0;
++}
++static int mtk_audio_drv_prepare(struct snd_pcm_substream *substream,struct snd_soc_dai *dai)
++{
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++		return mtk_audio_drv_play_prepare(substream, dai);
++	else
++		return mtk_audio_drv_rec_prepare(substream, dai);
++
++	return 0;
++}
+Index: linux-2.6.36/sound/soc/mtk/mtk_audio_pcm.c
+===================================================================
+--- /dev/null
++++ linux-2.6.36/sound/soc/mtk/mtk_audio_pcm.c
+@@ -0,0 +1,496 @@
++/*
++ * mtk_audio_pcm.c
++ *
++ *  Created on: 2013/9/6
++ *      Author: MTK04880
++ */
++
++#include <linux/init.h>
++#include <linux/version.h>
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,35)
++#include <linux/sched.h>
++#endif
++#include <linux/module.h>
++#include <linux/kernel.h> /* printk() */
++#include <linux/slab.h> /* kmalloc() */
++#include <linux/fs.h> /* everything... */
++#include <linux/errno.h> /* error codes */
++#include <linux/types.h> /* size_t */
++#include <linux/proc_fs.h>
++#include <linux/fcntl.h> /* O_ACCMODE */
++#include <asm/system.h> /* cli(), *_flags */
++#include <asm/uaccess.h> /* copy_from/to_user */
++#include <linux/interrupt.h>
++#include <linux/mm.h>
++#include <linux/dma-mapping.h>
++#include <sound/core.h>
++#include <linux/pci.h>
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++#include <sound/soc.h>
++#include <sound/soc-dapm.h>
++#include <sound/initval.h>
++#include "drivers/char/ralink_gdma.h"
++#include "mtk_audio_driver.h"
++
++#define GDMA_PAGE_SZ I2S_PAGE_SIZE
++#define GDMA_PAGE_NUM MAX_I2S_PAGE
++
++dma_addr_t i2s_txdma_addr, i2s_rxdma_addr;
++dma_addr_t i2s_mmap_addr[GDMA_PAGE_NUM*2];
++
++
++static int mtk_audio_pcm_open(struct snd_pcm_substream *substream);
++static int mtk_pcm_new(struct snd_card *card,\
++	struct snd_soc_dai *dai, struct snd_pcm *pcm);
++static void mtk_pcm_free(struct snd_pcm *pcm);
++static int mtk_audio_pcm_close(struct snd_pcm_substream *substream);
++static snd_pcm_uframes_t mtk_audio_pcm_pointer(struct snd_pcm_substream *substream);
++static int mtk_audio_pcm_trigger(struct snd_pcm_substream *substream, int cmd);
++static int mtk_audio_pcm_prepare(struct snd_pcm_substream *substream);
++static int mtk_audio_pcm_hw_params(struct snd_pcm_substream *substream,\
++				 struct snd_pcm_hw_params *hw_params);
++static int mtk_audio_pcm_copy(struct snd_pcm_substream *substream, int channel,\
++		snd_pcm_uframes_t pos,void __user *buf, snd_pcm_uframes_t count);
++static int mtk_audio_pcm_hw_free(struct snd_pcm_substream *substream);
++
++static int mtk_pcm_free_dma_buffer(struct snd_pcm_substream *substream,int stream);
++static int mtk_pcm_allocate_dma_buffer(struct snd_pcm_substream *substream,int stream);
++
++static const struct snd_pcm_hardware mtk_audio_hwparam = {
++	.info			= SNDRV_PCM_INFO_INTERLEAVED |SNDRV_PCM_INFO_PAUSE,
++	.formats		= SNDRV_PCM_FMTBIT_S16_LE,
++	.period_bytes_min	= GDMA_PAGE_SZ,
++	.period_bytes_max	= GDMA_PAGE_SZ,
++	.periods_min		= 2,
++	.periods_max		= 1024,
++	.buffer_bytes_max	= GDMA_PAGE_SZ*GDMA_PAGE_NUM,
++};
++
++static struct snd_pcm_ops mtk_pcm_ops = {
++
++	.open = 	mtk_audio_pcm_open,
++	.ioctl = 	snd_pcm_lib_ioctl,
++	.hw_params = mtk_audio_pcm_hw_params,
++	.hw_free = 	mtk_audio_pcm_hw_free,
++	.trigger =	mtk_audio_pcm_trigger,
++	.prepare = 	mtk_audio_pcm_prepare,
++	.pointer = 	mtk_audio_pcm_pointer,
++	.close = 	mtk_audio_pcm_close,
++	.copy = mtk_audio_pcm_copy,
++};
++struct snd_soc_platform mtk_soc_platform = {
++	.name		= "mtk-dma",
++	.pcm_ops	= &mtk_pcm_ops,
++	.pcm_new	= mtk_pcm_new,
++	.pcm_free	= mtk_pcm_free,
++};
++
++static int mtk_audio_pcm_close(struct snd_pcm_substream *substream){
++	return 0;
++}
++
++static snd_pcm_uframes_t mtk_audio_pcm_pointer(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	i2s_config_type* rtd = runtime->private_data;
++	unsigned int offset = 0;
++
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++		offset = bytes_to_frames(runtime, GDMA_PAGE_SZ*rtd->tx_r_idx);
++	}
++	else{
++		offset = bytes_to_frames(runtime, GDMA_PAGE_SZ*rtd->rx_w_idx);
++	}
++	return offset;
++}
++
++#if 0
++static int gdma_ctrl_start(struct snd_pcm_substream *substream){
++
++	struct snd_pcm_runtime *runtime= substream->runtime;
++	i2s_config_type* rtd = runtime->private_data;
++
++	//printk("%s:%d \n",__func__,__LINE__);
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++#if defined(I2S_FIFO_MODE)
++#else
++	GdmaI2sTx((u32) rtd->pPage0TxBuf8ptr, I2S_FIFO_WREG, 0, GDMA_PAGE_SZ, i2s_dma_tx_handler, i2s_dma_unmask_handler);
++	GdmaI2sTx((u32) rtd->pPage1TxBuf8ptr, I2S_FIFO_WREG, 1, GDMA_PAGE_SZ, i2s_dma_tx_handler, i2s_dma_unmask_handler);
++#endif
++
++#if defined(I2S_FIFO_MODE)
++#else
++	GdmaUnMaskChannel(GDMA_I2S_TX0);
++#endif
++		rtd->bTxDMAEnable = 1;
++	}
++	else{
++#if defined(I2S_FIFO_MODE)
++#else
++		GdmaI2sRx(I2S_RX_FIFO_RREG, (u32)rtd->pPage0RxBuf8ptr, 0, GDMA_PAGE_SZ, i2s_dma_rx_handler, i2s_dma_unmask_handler);
++		GdmaI2sRx(I2S_RX_FIFO_RREG, (u32)rtd->pPage1RxBuf8ptr, 1, GDMA_PAGE_SZ, i2s_dma_rx_handler, i2s_dma_unmask_handler);
++#endif
++
++#if defined(I2S_FIFO_MODE)
++#else
++		GdmaUnMaskChannel(GDMA_I2S_RX0);
++#endif
++		rtd->bRxDMAEnable = 1;
++		return 0;
++	}
++	return 0;
++}
++
++static int gdma_ctrl_stop(struct snd_pcm_substream *substream){
++
++	struct snd_pcm_runtime *runtime= substream->runtime;
++	i2s_config_type* rtd = runtime->private_data;
++
++	//printk("%s:%d \n",__func__,__LINE__);
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++		rtd->bTxDMAEnable = 0;
++	}
++	else{
++		rtd->bRxDMAEnable = 0;
++	}
++	return 0;
++}
++#endif
++
++static int mtk_audio_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
++{
++	int ret = 0;
++	i2s_config_type* rtd = (i2s_config_type*)substream->runtime->private_data;
++	MSG("trigger cmd:%s\n",(cmd==SNDRV_PCM_TRIGGER_START)?"START":\
++			(cmd==SNDRV_PCM_TRIGGER_RESUME)?"RESUME":\
++					(cmd==SNDRV_PCM_TRIGGER_PAUSE_RELEASE)?"PAUSE_RELEASE":\
++							(cmd==SNDRV_PCM_TRIGGER_STOP)?"STOP":\
++									(cmd==SNDRV_PCM_TRIGGER_SUSPEND)?"SUSPEND":\
++											(cmd==SNDRV_PCM_TRIGGER_PAUSE_PUSH)?"PAUSE_PUSH":"default");
++
++	switch (cmd) {
++	case SNDRV_PCM_TRIGGER_START:
++	case SNDRV_PCM_TRIGGER_STOP:
++		break;
++
++	case SNDRV_PCM_TRIGGER_RESUME:
++	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
++#if 0
++		ret = gdma_ctrl_start(substream);
++#else
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++
++			rtd->tx_pause_en = 0;
++			//gdma_En_Switch(rtd,STREAM_PLAYBACK,GDMA_I2S_EN);
++			//gdma_unmask_handler(GDMA_I2S_TX0);
++		}
++		else{
++			rtd->rx_pause_en = 0;
++			//gdma_En_Switch(rtd,STREAM_CAPTURE,GDMA_I2S_EN);
++			//gdma_unmask_handler(GDMA_I2S_RX0);
++		}
++#endif
++		break;
++
++	case SNDRV_PCM_TRIGGER_SUSPEND:
++	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
++#if 0
++		ret =gdma_ctrl_stop(substream);
++#else
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++			//gdma_En_Switch(rtd,STREAM_PLAYBACK,GDMA_I2S_DIS);
++			rtd->tx_pause_en = 1;
++		}
++		else{
++			rtd->rx_pause_en = 1;
++			//gdma_En_Switch(rtd,STREAM_CAPTURE,GDMA_I2S_DIS);
++		}
++#endif
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++	return ret;
++}
++
++static int mtk_audio_pcm_copy(struct snd_pcm_substream *substream, int channel,\
++		snd_pcm_uframes_t pos,void __user *buf, snd_pcm_uframes_t count){
++	struct snd_pcm_runtime *runtime= substream->runtime;
++	i2s_config_type* rtd = runtime->private_data;
++	char *hwbuf = NULL;
++#if 0
++	do{
++		hwbuf = runtime->dma_area + frames_to_bytes(runtime, pos);
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++			//printk("%s:%d dma:%x hwoff:%d f2b:%d copy to user's frame:%d \n",__func__,__LINE__,(unsigned int)runtime->dma_area,pos,frames_to_bytes(runtime, pos),frames_to_bytes(runtime, count));
++			if(((rtd->tx_w_idx+4)%MAX_I2S_PAGE)!=rtd->tx_r_idx){
++				if (copy_from_user(hwbuf, buf, frames_to_bytes(runtime,count)))
++					return -EFAULT;
++				rtd->tx_w_idx = (rtd->tx_w_idx+1)%MAX_I2S_PAGE;
++				break;
++			}
++			else{
++					interruptible_sleep_on(&(rtd->i2s_tx_qh));
++			}
++		}
++		else{
++			if(rtd->rx_r_idx!=rtd->rx_w_idx)
++			{
++				if (copy_to_user(buf, hwbuf, frames_to_bytes(runtime, count)))
++					return -EFAULT;
++				rtd->rx_r_idx = (rtd->rx_r_idx+1)%MAX_I2S_PAGE;
++				break;
++			}
++			else{
++					interruptible_sleep_on(&(rtd->i2s_rx_qh));
++			}
++		}
++	}while(1);
++#else
++
++	hwbuf = runtime->dma_area + frames_to_bytes(runtime, pos);
++	//MSG("%s bur:%x\n",__func__,hwbuf);
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++		i2s_audio_exchange(rtd,STREAM_PLAYBACK,(unsigned long)buf);
++	}
++	else{
++		i2s_audio_exchange(rtd,STREAM_CAPTURE,(unsigned long)buf);
++	}
++#endif
++	return 0;
++}
++
++static int mtk_audio_pcm_prepare(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime= substream->runtime;
++	i2s_config_type *rtd = (i2s_config_type*)runtime->private_data;
++	//runtime->stop_threshold = runtime->buffer_size = GDMA_PAGE_NUM*GDMA_PAGE_SZ;
++	runtime->boundary = GDMA_PAGE_NUM*GDMA_PAGE_SZ;
++#if 0
++	gdma_ctrl_start(substream);
++#else
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++		gdma_En_Switch(rtd,STREAM_PLAYBACK,GDMA_I2S_EN);
++		gdma_unmask_handler(GDMA_I2S_TX0);
++	}
++	else{
++		gdma_En_Switch(rtd,STREAM_CAPTURE,GDMA_I2S_EN);
++		gdma_unmask_handler(GDMA_I2S_RX0);
++	}
++
++#endif
++
++	return 0;
++}
++
++
++static int mtk_audio_pcm_hw_params(struct snd_pcm_substream *substream,
++				 struct snd_pcm_hw_params *hw_params)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	i2s_config_type *rtd = (i2s_config_type*)runtime->private_data;
++	int ret,i;
++	ret = i = 0;
++	//printk("%s %d \n",__func__,__LINE__);
++
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++#if 0
++		/* allocate tx buffer */
++		rtd->pPage0TxBuf8ptr = (u8*)pci_alloc_consistent(NULL, GDMA_PAGE_SZ*2 , &i2s_txdma_addr);
++		if( rtd->pPage0TxBuf8ptr==NULL){
++			MSG("Allocate Tx Page Buffer Failed\n");
++			return -1;
++		}
++		rtd->pPage1TxBuf8ptr =  rtd->pPage0TxBuf8ptr + GDMA_PAGE_SZ;
++		for(i = 0;i< GDMA_PAGE_NUM;i++)
++			rtd->pMMAPTxBufPtr[i] =(char *)(buf->area +i*GDMA_PAGE_SZ);
++#else
++		i2s_page_prepare(rtd,STREAM_PLAYBACK);
++#endif
++	}
++	else{
++#if 0
++		/* allocate rx buffer */
++		rtd->pPage0RxBuf8ptr = (u8*)pci_alloc_consistent(NULL, GDMA_PAGE_SZ*2 , &i2s_rxdma_addr);
++		if(rtd->pPage0RxBuf8ptr==NULL)
++		{
++			MSG("Allocate Rx Page Buffer Failed\n");
++			return -1;
++		}
++		rtd->pPage1RxBuf8ptr = rtd->pPage0RxBuf8ptr + GDMA_PAGE_SZ;
++		for(i = 0;i< GDMA_PAGE_NUM;i++)
++			rtd->pMMAPRxBufPtr[i] =(char *)(buf->area +i*GDMA_PAGE_SZ);
++#else
++		i2s_page_prepare(rtd,STREAM_CAPTURE);
++#endif
++	}
++
++	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
++
++	return ret;
++}
++
++static int mtk_audio_pcm_hw_free(struct snd_pcm_substream *substream)
++{
++	i2s_config_type* rtd = (i2s_config_type*)substream->runtime->private_data;
++	struct snd_dma_buffer *buf = &substream->dma_buffer;
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK){
++		if(rtd->bTxDMAEnable==1){
++#if 0
++			rtd->bTxDMAEnable = 0;
++			if (rtd->nTxDMAStopped<4)
++				interruptible_sleep_on(&(rtd->i2s_tx_qh));
++			printk("%s:%d \n",__func__,__LINE__);
++			pci_free_consistent(NULL, I2S_PAGE_SIZE*2,rtd->pPage0TxBuf8ptr, i2s_txdma_addr);
++			rtd->pPage0TxBuf8ptr = NULL;
++#else
++			i2s_dma_tx_end_handle(rtd);
++			gdma_En_Switch(rtd,STREAM_PLAYBACK,GDMA_I2S_DIS);
++			/* Stop dma trnsfer data */
++			i2s_dma_mask_handler(GDMA_I2S_TX0);
++			i2s_dma_mask_handler(GDMA_I2S_TX1);
++			i2s_page_release(rtd,STREAM_PLAYBACK);
++#endif
++		}
++	}
++	else{
++		if(rtd->bRxDMAEnable==1){
++#if 0
++			rtd->bRxDMAEnable = 0;
++			if(rtd->nRxDMAStopped<2)
++				interruptible_sleep_on(&(rtd->i2s_rx_qh));
++			pci_free_consistent(NULL, I2S_PAGE_SIZE*2,rtd->pPage0RxBuf8ptr, i2s_txdma_addr);
++			rtd->pPage0RxBuf8ptr = NULL;
++#else
++			gdma_En_Switch(rtd,STREAM_CAPTURE,GDMA_I2S_DIS);
++			/* Stop dma transfer */
++			i2s_dma_mask_handler(GDMA_I2S_RX0);
++			i2s_dma_mask_handler(GDMA_I2S_RX1);
++			i2s_page_release(rtd,STREAM_CAPTURE);
++#endif
++		}
++	}
++	mtk_pcm_free_dma_buffer(substream,substream->stream);
++	return 0;
++}
++
++static int mtk_pcm_free_dma_buffer(struct snd_pcm_substream *substream,
++	int stream)
++{
++
++	//struct snd_pcm_substream *substream = pcm->streams[stream].substream;
++	struct snd_dma_buffer *buf = &substream->dma_buffer;
++	i2s_config_type* rtd = (i2s_config_type*)substream->runtime->private_data;
++
++	if (!buf->area)
++		return 0;
++	if(substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++		i2s_memPool_free(rtd,STREAM_PLAYBACK);
++	else
++		i2s_memPool_free(rtd,STREAM_CAPTURE);
++	buf->area = NULL;
++	snd_pcm_set_runtime_buffer(substream, NULL);
++	return 0;
++}
++
++static int mtk_pcm_allocate_dma_buffer(struct snd_pcm_substream *substream,
++	int stream)
++{
++
++	//struct snd_pcm_substream *substream = pcm->streams[stream].substream;
++	struct snd_dma_buffer *buf = &substream->dma_buffer;
++	i2s_config_type* rtd = (i2s_config_type*)substream->runtime->private_data;
++
++	if(!buf->area){
++		buf->dev.type = SNDRV_DMA_TYPE_UNKNOWN;
++		buf->dev.dev = NULL;
++		buf->private_data = NULL;
++		if(stream == SNDRV_PCM_STREAM_PLAYBACK)
++			buf->area = i2s_memPool_Alloc(rtd,STREAM_PLAYBACK);
++		else
++			buf->area = i2s_memPool_Alloc(rtd,STREAM_CAPTURE);
++
++		printk("%s:%d -%s\n",__func__,__LINE__,(stream == SNDRV_PCM_STREAM_PLAYBACK)?"PB":"CP");
++		if (!buf->area)
++			return -ENOMEM;
++		buf->bytes = (GDMA_PAGE_SZ*GDMA_PAGE_NUM);
++	}
++	return 0;
++}
++
++static int mtk_audio_pcm_open(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime= substream->runtime;
++	struct snd_dma_buffer *buf = &substream->dma_buffer;
++	int stream = substream->stream;
++	int ret = 0;
++
++	snd_soc_set_runtime_hwparams(substream, &mtk_audio_hwparam);
++	/* ensure that buffer size is a multiple of period size */
++	ret = snd_pcm_hw_constraint_integer(runtime,
++						SNDRV_PCM_HW_PARAM_PERIODS);
++	if (ret < 0)
++		goto out;
++#if 1
++	if(stream == SNDRV_PCM_STREAM_PLAYBACK){
++		ret = mtk_pcm_allocate_dma_buffer(substream,
++				SNDRV_PCM_STREAM_PLAYBACK);
++	}
++	else{
++		ret = mtk_pcm_allocate_dma_buffer(substream,
++				SNDRV_PCM_STREAM_CAPTURE);
++	}
++	if (ret)
++		goto out;
++#endif
++	if(buf)
++		memset(buf->area,0,sizeof(I2S_PAGE_SIZE*MAX_I2S_PAGE));
++
++ out:
++	return ret;
++	return 0;
++}
++
++
++
++static int mtk_pcm_new(struct snd_card *card,
++	struct snd_soc_dai *dai, struct snd_pcm *pcm)
++{
++	int ret = 0;
++	printk("%s:%d \n",__func__,__LINE__);
++
++	return 0;
++}
++
++static void mtk_pcm_free(struct snd_pcm *pcm)
++{
++	struct snd_pcm_substream *substream;
++	struct snd_dma_buffer *buf;
++	i2s_config_type* rtd;
++	int stream;
++	printk("%s:%d \n",__func__,__LINE__);
++	return 0;
++}
++
++
++static int __init mtk_audio_pcm_init(void)
++{
++	//printk("%s \n",__func__);
++	return snd_soc_register_platform(&mtk_soc_platform);
++}
++
++static void __exit mtk_audio_pcm_exit(void)
++{
++	snd_soc_unregister_platform(&mtk_soc_platform);
++}
++
++EXPORT_SYMBOL_GPL(mtk_soc_platform);
++module_init(mtk_audio_pcm_init);
++module_exit(mtk_audio_pcm_exit);
++
++MODULE_AUTHOR("Atsushi Nemoto <anemo@mba.ocn.ne.jp>");
++MODULE_DESCRIPTION("TXx9 ACLC Audio DMA driver");
++MODULE_LICENSE("GPL");
++
+Index: linux-2.6.36/sound/soc/soc-cache.c
+===================================================================
+--- linux-2.6.36.orig/sound/soc/soc-cache.c
++++ linux-2.6.36/sound/soc/soc-cache.c
+@@ -555,6 +555,11 @@ static struct {
+  * Note that at present this code cannot be used by CODECs with
+  * volatile registers.
+  */
++#if defined(CONFIG_SND_RALINK_SOC)
++extern unsigned int mtk_i2c_read(struct snd_soc_codec *codec,unsigned int reg);
++extern int mtk_i2c_write(struct snd_soc_codec *codec, unsigned int reg,unsigned int val);
++#endif
++
+ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
+ 			       int addr_bits, int data_bits,
+ 			       enum snd_soc_control_type control)
+@@ -577,6 +582,10 @@ int snd_soc_codec_set_cache_io(struct sn
+ 
+ 	switch (control) {
+ 	case SND_SOC_CUSTOM:
++#if defined(CONFIG_SND_RALINK_SOC)
++		codec->write = mtk_i2c_write;
++		codec->read = mtk_i2c_read;
++#endif
+ 		break;
+ 
+ 	case SND_SOC_I2C:
+Index: linux-2.6.36/sound/soc/soc-core.c
+===================================================================
+--- linux-2.6.36.orig/sound/soc/soc-core.c
++++ linux-2.6.36/sound/soc/soc-core.c
+@@ -636,6 +636,7 @@ static int soc_pcm_prepare(struct snd_pc
+ 		}
+ 	}
+ 
++#ifndef CONFIG_SND_RALINK_SOC
+ 	if (platform->pcm_ops->prepare) {
+ 		ret = platform->pcm_ops->prepare(substream);
+ 		if (ret < 0) {
+@@ -643,7 +644,7 @@ static int soc_pcm_prepare(struct snd_pc
+ 			goto out;
+ 		}
+ 	}
+-
++#endif
+ 	if (codec_dai->ops->prepare) {
+ 		ret = codec_dai->ops->prepare(substream, codec_dai);
+ 		if (ret < 0) {
+@@ -659,7 +660,15 @@ static int soc_pcm_prepare(struct snd_pc
+ 			goto out;
+ 		}
+ 	}
+-
++#ifdef CONFIG_SND_RALINK_SOC
++	if (platform->pcm_ops->prepare) {
++		ret = platform->pcm_ops->prepare(substream);
++		if (ret < 0) {
++			printk(KERN_ERR "asoc: platform prepare error\n");
++			goto out;
++		}
++	}
++#endif
+ 	/* cancel any delayed stream shutdown that is pending */
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
+ 	    codec_dai->pop_wait) {
+

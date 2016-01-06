@@ -31,7 +31,7 @@ modules.builtin
 *.bz2
 *.lzma
 *.lzo
-*.patch
+!*.patch
 *.gcno
 
 #
@@ -54,6 +54,7 @@ modules.builtin
 # chuyun sdk private
 !net/ipv4/netfilter/nf_igd/*.o
 !net/sched/sch_htb.o
+!drivers/net/wireless/rt2860v2/common/rt2860.bin
 #
 # Generated include files
 #
@@ -62,11 +63,12 @@ include/linux/version.h
 include/generated
 
 # stgit generated dirs
-patches-*
+#patches-*
 
 # quilt's files
-patches
+#patches
 series
+!patch/
 
 # cscope files
 cscope.*

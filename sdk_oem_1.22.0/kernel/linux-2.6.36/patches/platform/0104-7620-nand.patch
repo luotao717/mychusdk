@@ -1,0 +1,49 @@
+Index: linux-2.6.36/drivers/mtd/ralink/ralink_nand.c
+===================================================================
+--- linux-2.6.36.orig/drivers/mtd/ralink/ralink_nand.c
++++ linux-2.6.36/drivers/mtd/ralink/ralink_nand.c
+@@ -106,6 +106,35 @@ int nand_addrlen = 5;
+ int is_nand_page_2048 = 0;
+ const unsigned int nand_size_map[2][3] = {{25, 30, 30}, {20, 27, 30}};
+ 
++#if 1 // openwrt
++static struct mtd_partition rt2880_partitions[] = {
++        {
++                name:           "ALL",
++                size:           MTDPART_SIZ_FULL,
++                offset:         0,
++        },
++    /* Put your own partition definitions here */
++        {
++                name:           "Bootloader",
++                size:           MTD_BOOT_PART_SIZE,
++                offset:         0,
++        }, {
++                name:           "Config",
++                size:           MTD_CONFIG_PART_SIZE,
++                offset:         MTDPART_OFS_APPEND
++        }, {
++                name:           "Factory",
++                size:           MTD_FACTORY_PART_SIZE,
++                offset:         MTDPART_OFS_APPEND
++        }, {
++                name:           "firmware",
++                size:           0x6C0000,
++                offset:         0x140000,
++        }
++};
++
++#else // openwrt
++
+ static struct mtd_partition rt2880_partitions[] = {
+ 	{
+                 name:           "ALL",
+@@ -161,6 +190,8 @@ static struct mtd_partition rt2880_parti
+         }
+ };
+ 
++#endif // openwrt
++
+ #ifdef SKIP_BAD_BLOCK
+ static int page_remap(struct ra_nand_chip *ra, int page);
+ static int write_next_on_fail(struct ra_nand_chip *ra, char *write_buf, int page, int flags, int * to_blk);

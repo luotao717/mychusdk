@@ -1,0 +1,10 @@
+Index: linux-2.6.36/drivers/net/Kconfig
+===================================================================
+--- linux-2.6.36.orig/drivers/net/Kconfig
++++ linux-2.6.36/drivers/net/Kconfig
+@@ -3492,3 +3492,5 @@ config VMXNET3
+          module will be called vmxnet3.
+ 
+ endif # NETDEVICES
++
++source "drivers/net/rt_rdm/Kconfig"

@@ -1,0 +1,133 @@
+Index: linux-2.6.36/drivers/mtd/nand/nand_def.h
+===================================================================
+--- linux-2.6.36.orig/drivers/mtd/nand/nand_def.h
++++ linux-2.6.36/drivers/mtd/nand/nand_def.h
+@@ -20,7 +20,7 @@
+ //#define __INTERNAL_USE_AHB_MODE__ 	(0)
+ #define SKIP_BAD_BLOCK
+ #define FACT_BBT
+-//#define NAND_JFFS2_WORKAROUND
++#define NAND_JFFS2_WORKAROUND
+ 
+ #ifdef FACT_BBT
+ #define FACT_BBT_POOL_SIZE      (4)
+Index: linux-2.6.36/drivers/mtd/nand/mtk_nand.c
+===================================================================
+--- linux-2.6.36.orig/drivers/mtd/nand/mtk_nand.c
++++ linux-2.6.36/drivers/mtd/nand/mtk_nand.c
+@@ -102,6 +102,9 @@ unsigned int CFG_BLOCKSIZE;
+ 
+ #if defined(SKIP_BAD_BLOCK)
+ #define FILE_SYSTEM_START_ADDRESS       IMAGE1_SIZE
++#ifdef CONFIG_RT2880_ROOTFS_IN_FLASH
++#define NAND_MTD_ROOTFS_PARTITION_NO    5
++#endif
+ static int shift_on_bbt = 0;
+ extern void nand_bbt_set(struct mtd_info *mtd, int page, int flag);
+ extern int nand_bbt_get(struct mtd_info *mtd, int page);
+@@ -2246,7 +2249,19 @@ static int get_start_end_block(struct mt
+ 		}
+                 *end_blk = *start_blk + (g_pasStatic_Partition[i].size >> chip->phys_erase_shift) - 1;
+                 if ((block >= *start_blk) && (block <= *end_blk))
+-                        break;
++                {       
++#ifdef CONFIG_RT2880_ROOTFS_IN_FLASH
++                        //if (i == (NAND_MTD_ROOTFS_PARTITION_NO - 1))
++                        //{
++                        //      *end_blk += (g_pasStatic_Partition[i+1].size >> chip->phys_erase_shift);
++                        //
++                        if (i == NAND_MTD_ROOTFS_PARTITION_NO)
++                        {
++                        	*start_blk -= (g_pasStatic_Partition[i-1].size >> chip->phys_erase_shift);
++                        }
++#endif 
++			break;
++		}
+                 *start_blk = *end_blk + 1;
+         }
+         if (*start_blk > *end_blk)
+@@ -2435,12 +2450,14 @@ static int write_next_on_fail(struct mtd
+ }
+ 
+ static int count = 0;
++uint64_t file_system_start_address = FILE_SYSTEM_START_ADDRESS;
+ static int is_skip_bad_block(struct mtd_info *mtd, int page)
+ {
+ 	struct nand_chip *chip = mtd->priv;
+ 
+ 	count ++;
+-	if ((page << chip->page_shift) >= FILE_SYSTEM_START_ADDRESS)
++//	if ((page << chip->page_shift) >= FILE_SYSTEM_START_ADDRESS)
++	if ((page << chip->page_shift) >= file_system_start_address)
+ 	{
+ 		return 0;
+ 	}
+@@ -3015,6 +3032,11 @@ static int mtk_nand_read_page(struct mtd
+     /* else
+        return -EIO; */
+ #endif
++    if (mtk_nand_exec_read_page(mtd, page_in_block + mapped_block * page_per_block,
++                mtd->writesize, buf, chip->oob_poi))
++        return 0;
++    else
++        return -EIO;
+     }
+     else
+     {
+@@ -3116,6 +3138,9 @@ static int mtk_nand_erase(struct mtd_inf
+         	    return NAND_STATUS_FAIL;
+         	}
+ #endif
++	 	mtk_nand_block_markbad_hw(mtd, (page_in_block + mapped_block * page_per_block) << chip->page_shift);
++                nand_bbt_set(mtd, page_in_block + mapped_block * page_per_block, 0x3);
++        	return -EIO;
+ 	}
+ 	else
+ 	{
+@@ -3530,6 +3555,9 @@ static int mtk_nand_write_oob(struct mtd
+         	    return -EIO;
+         	}
+ #endif
++		mtk_nand_block_markbad_hw(mtd, (page_in_block + mapped_block * page_per_block) << chip->page_shift);
++                nand_bbt_set(mtd, page_in_block + mapped_block * page_per_block, 0x3);
++                return -EIO;
+ 	}
+ 	else
+ 	{
+@@ -3685,15 +3713,10 @@ static int mtk_nand_read_oob(struct mtd_
+ 		}
+ 		// allow to read oob even if the block is bad
+ 	}
+-    	if (mtk_nand_read_oob_hw(mtd, chip, page_in_block + mapped_block * page_per_block)!=0)
+-	{
+-    		return -1;
+-	}
+     }
+-#else
++#endif
+     	if (mtk_nand_read_oob_hw(mtd, chip, page_in_block + mapped_block * page_per_block)!=0)
+     		return -1;
+-#endif
+     return 0;                   // the return value is sndcmd
+ }
+ 
+@@ -3782,10 +3805,8 @@ static int mtk_nand_block_bad(struct mtd
+ 	    	        ret = 1;
+ 	    	    }
+ 	    	}
+-	    	break;
+ #endif
+ 	    }
+-	    else
+ 		break;
+ #endif
+ 	}while(1);
+@@ -4511,7 +4532,7 @@ int mtk_nand_probe()
+ 	g_pasStatic_Partition[5].size = IMAGE1_SIZE - (LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE \
+ 			                    + LARGE_MTD_FACTORY_PART_SIZE + CONFIG_MTD_KERNEL_PART_SIZ);
+ #ifdef CONFIG_ROOTFS_IN_FLASH_NO_PADDING
+-#error "No code to handle this case in MTK NAND Driver.."
++//#error "No code to handle this case in MTK NAND Driver.."
+ #endif
+ #else	//CONFIG_RT2880_ROOTFS_IN_RAM
+ 	g_pasStatic_Partition[4].size = IMAGE1_SIZE - (LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE \

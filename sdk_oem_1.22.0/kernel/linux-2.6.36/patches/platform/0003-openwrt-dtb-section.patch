@@ -1,0 +1,14 @@
+Index: linux-2.6.36/arch/mips/kernel/head.S
+===================================================================
+--- linux-2.6.36.orig/arch/mips/kernel/head.S
++++ linux-2.6.36/arch/mips/kernel/head.S
+@@ -141,6 +141,9 @@ FEXPORT(__kernel_entry)
+ 	j	kernel_entry
+ #endif
+ 
++    .ascii "OWRTDTB:"
++    EXPORT(__image_dtb)
++    .fill 0x4000
+ 	__REF
+ 
+ NESTED(kernel_entry, 16, sp)			# kernel entry point
