@@ -213,6 +213,91 @@ struct json_object *get_host_json(struct host_dump_info *host, char *callip)
 	return phost;
 }
 
+struct json_object *get_host_json_fx(struct host_dump_info *host, char *callip)
+{
+	unsigned long speed;
+	int i = 0;
+	struct json_object *obj, *phost;
+	char host_flag[HIRF_MAX + 3] = {0,}, *ptr = NULL;
+
+	phost = json_object_new_object();
+
+	obj= json_object_new_string(
+		host->ip[0].s_addr ? inet_ntoa(host->ip[0]) : "");
+	json_object_object_add(phost, "IP", obj);
+	
+	obj= json_object_new_string(cgi_mac2str(host->mac));
+	json_object_object_add(phost, "MAC", obj);
+
+	obj= json_object_new_string(host->name);
+	json_object_object_add(phost, "HOSTNAME", obj);
+
+	obj = json_object_new_int((int)host->ontime);
+	json_object_object_add(phost, "ONLINE", obj);
+
+	memset(host_flag, 0, sizeof(host_flag));
+	host_flag[0] = 'F'; 
+	for (i = 0; i < 1 /*IGD_HOST_IP_MX*/; i++) {
+		if (host->ip[i].s_addr == 0)
+			continue;
+		ptr = inet_ntoa(host->ip[i]);
+		if (ptr != NULL && callip != NULL \
+				&& strcmp(ptr, callip) == 0) {
+			host_flag[0] = 'T';
+		}
+	}
+	for (i = 0; i < HIRF_MAX; i++) {
+		host_flag[i + 1] = \
+			igd_test_bit(i, host->flag) ? 'T' : 'F';
+	}
+	if(host_flag[2] == 'T')
+	{
+		obj = json_object_new_int(1);
+	}
+	else
+	{
+		obj = json_object_new_int(0);
+	}
+	json_object_object_add(phost, "BlockUser", obj);
+
+	return phost;
+}
+
+struct json_object *get_host_json_fx_macfilterlist(struct host_dump_info *host, char *callip,int *iswrite)
+{
+	unsigned long speed;
+	int i = 0;
+	struct json_object *obj, *phost;
+	char host_flag[HIRF_MAX + 3] = {0,}, *ptr = NULL;
+
+	*iswrite=0;
+	phost = json_object_new_object();
+
+	memset(host_flag, 0, sizeof(host_flag));
+	host_flag[0] = 'F'; 
+	for (i = 0; i < 1 /*IGD_HOST_IP_MX*/; i++) {
+		if (host->ip[i].s_addr == 0)
+			continue;
+		ptr = inet_ntoa(host->ip[i]);
+		if (ptr != NULL && callip != NULL \
+				&& strcmp(ptr, callip) == 0) {
+			host_flag[0] = 'T';
+		}
+	}
+	for (i = 0; i < HIRF_MAX; i++) {
+		host_flag[i + 1] = \
+			igd_test_bit(i, host->flag) ? 'T' : 'F';
+	}
+	if(host_flag[2] == 'T')
+	{
+		*iswrite=1;
+		obj= json_object_new_string(cgi_mac2str(host->mac));
+		json_object_object_add(phost, "BLOCKMAC", obj);
+	}
+	
+	return phost;
+}
+
 int cgi_sys_main_handler(server_t *srv, connection_t *con, struct json_object *response)
 {
 	int status = 0;
@@ -543,6 +628,23 @@ int cgi_net_host_if_handler(server_t *srv, connection_t *con, struct json_object
 		return CGI_ERR_INPUT;\
 	}\
 } while(0)
+
+#define CON_GET_MAC_FX(pmac, con, mac) do {\
+		pmac = con_value_get(con, "MACADDR");\
+		if (!pmac || cgi_str2mac(pmac, (unsigned char *)mac)) {\
+			CGI_PRINTF("mac is NULL\n");\
+			return CGI_ERR_INPUT;\
+		}\
+} while(0)
+
+#define CON_GET_MAC_FX2(pmac, con, mac) do {\
+				pmac = con_value_get(con, "MAC");\
+				if (!pmac || cgi_str2mac(pmac, (unsigned char *)mac)) {\
+					CGI_PRINTF("mac is NULL\n");\
+					return CGI_ERR_INPUT;\
+				}\
+} while(0)
+
 
 #define CON_GET_ACT(pact, con, act) do {\
 	pact = con_value_get(con, "act");\
@@ -3596,7 +3698,1086 @@ int cgi_net_vpn_handler(server_t* srv, connection_t *con, struct json_object*res
 	json_object_object_add(response, "user", obj);
 	obj= json_object_new_string(info.password);
 	json_object_object_add(response, "password", obj);
-	obj= json_object_new_string(info.callid);
-	json_object_object_add(response, "cid", obj);
 	return 0;
 }
+
+
+//by luot
+int cgi_fx_networktype_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int uid = 1;
+	char macstr[18]={0};
+	struct iface_info info;
+	struct iface_conf wanconfig, oldcfg, cfgbak;
+	struct json_object* obj,*tmpjs = NULL;
+
+	int mode = 0;
+	char *user_s = NULL, *passwd_s = NULL, *status = NULL, *dns1_s = NULL;
+	char *mode_s = NULL,*mac_s = NULL, *ip_s = NULL, *clone = NULL;
+	char *mask_s = NULL, *gw_s = NULL, *dns_s = NULL, *mtu_s = NULL;
+	
+	memset(&info, 0x0, sizeof(info));
+	if (connection_is_set_lktos(con))
+	{
+		#ifdef ALI_REQUIRE_SWITCH
+			int ali_flag = 0;
+			if (mu_msg(ALI_MOD_GET_RESET, NULL, 0, NULL, 0))
+				mu_msg(ALI_MOD_GET_RESET, &ali_flag, sizeof(ali_flag), NULL, 0);
+		#endif
+		
+		mode_s = con_value_get(con, "NetworkType");
+		if (NULL == mode_s)
+		{
+			return CGI_ERR_INPUT;
+		}
+		if(strcmp(mode_s,"DHCP")== NULL)
+		{
+			mode=1;
+		}
+		else if(strcmp(mode_s,"PPPOE")== NULL)
+		{
+			mode=2;
+		}
+		else if(strcmp(mode_s,"STATIC")== NULL)
+		{
+			mode=3;
+		}
+		else
+		{
+			return CGI_ERR_INPUT;
+		}
+		DEBUG("%s--%d",mode_s,mode);
+		uid = 1;
+		memset(&oldcfg, 0x0, sizeof(oldcfg));
+		if (mu_msg(IF_MOD_PARAM_SHOW, &uid, sizeof(uid), &oldcfg, sizeof(oldcfg)))
+			return CGI_ERR_FAIL;
+		memset(&cfgbak, 0x0, sizeof(cfgbak));
+		if (mu_msg(IF_MOD_PARAM_BAK, &uid, sizeof(uid), &cfgbak, sizeof(cfgbak)))
+			return CGI_ERR_FAIL;
+		memset(&wanconfig, 0x0, sizeof(wanconfig));
+		wanconfig.uid = 1;
+		switch (mode) {
+		case MODE_DHCP:
+			wanconfig.mode = MODE_DHCP;
+			mtu_s = con_value_get(con, "MTU");
+			if (mtu_s)
+				wanconfig.isp.mtu = atoi(mtu_s);
+			else if (oldcfg.mode == MODE_DHCP && oldcfg.isp.mtu > 0)
+				wanconfig.isp.mtu = oldcfg.isp.mtu;
+			else if (cfgbak.mode == MODE_DHCP && cfgbak.isp.mtu > 0)
+				wanconfig.isp.mtu = cfgbak.isp.mtu;
+			else
+				wanconfig.isp.mtu = 1500;
+			DEBUG("dhcpmtu=%d",wanconfig.isp.mtu);
+			if (wanconfig.isp.mtu > 1500 || wanconfig.isp.mtu < 1000)
+				return CGI_ERR_INPUT;
+			dns_s = con_value_get(con, "WanDns1");
+			if (dns_s) {
+				if (strlen(dns_s) > 0 && checkip(dns_s))
+					return CGI_ERR_INPUT;
+				inet_aton(dns_s, &wanconfig.isp.dns[0]);
+			} else if (oldcfg.mode == MODE_DHCP)
+				wanconfig.isp.dns[0].s_addr = oldcfg.isp.dns[0].s_addr;
+			else if (cfgbak.mode == MODE_DHCP)
+				wanconfig.isp.dns[0].s_addr = cfgbak.isp.dns[0].s_addr;
+			dns1_s = con_value_get(con, "WanDns2");
+			if (dns1_s) {
+				if (strlen(dns1_s) > 0 && checkip(dns1_s))
+					return CGI_ERR_INPUT;
+				inet_aton(dns1_s, &wanconfig.isp.dns[1]);
+			} else if (oldcfg.mode == MODE_DHCP)
+				wanconfig.isp.dns[1].s_addr = oldcfg.isp.dns[1].s_addr;
+			else if (cfgbak.mode == MODE_DHCP)
+				wanconfig.isp.dns[1].s_addr = cfgbak.isp.dns[1].s_addr;
+			memcpy(wanconfig.isp.mac, oldcfg.isp.mac, ETH_ALEN);
+			break;
+		case MODE_PPPOE:
+			user_s = con_value_get(con, "PPPOEUsername");
+			passwd_s = con_value_get(con, "PPPOEPassword");
+			if (NULL == user_s || NULL == passwd_s)
+				return CGI_ERR_INPUT;
+			if (!strlen(user_s) || (strlen(user_s) > sizeof(wanconfig.isp.pppoe.user) - 1))
+				return CGI_ERR_INPUT;
+			if (!strlen(passwd_s) || (strlen(passwd_s) > sizeof(wanconfig.isp.pppoe.passwd) - 1))
+				return CGI_ERR_INPUT;
+			mtu_s = con_value_get(con, "MTU");
+			if (mtu_s)
+				wanconfig.isp.mtu = atoi(mtu_s);
+			else if (oldcfg.mode == MODE_PPPOE && oldcfg.isp.mtu > 0)
+				wanconfig.isp.mtu = oldcfg.isp.mtu;
+			else if (cfgbak.mode == MODE_PPPOE && cfgbak.isp.mtu > 0)
+				wanconfig.isp.mtu = cfgbak.isp.mtu;
+			else
+				wanconfig.isp.mtu = 1480;
+			if (wanconfig.isp.mtu > 1492 || wanconfig.isp.mtu < 1000)
+				return CGI_ERR_INPUT;
+			dns_s = con_value_get(con, "WanDns1");
+			if (dns_s) {
+				if (strlen(dns_s) > 0 && checkip(dns_s))
+					return CGI_ERR_INPUT;
+				inet_aton(dns_s, &wanconfig.isp.dns[0]);
+			} else if (oldcfg.mode == MODE_PPPOE)
+				wanconfig.isp.dns[0].s_addr = oldcfg.isp.dns[0].s_addr;
+			else if (cfgbak.mode == MODE_PPPOE)
+				wanconfig.isp.dns[0].s_addr = cfgbak.isp.dns[0].s_addr;
+			dns1_s = con_value_get(con, "WanDns2");
+			if (dns1_s) {
+				if (strlen(dns1_s) > 0 && checkip(dns1_s))
+					return CGI_ERR_INPUT;
+				inet_aton(dns1_s, &wanconfig.isp.dns[1]);
+			} else if (oldcfg.mode == MODE_PPPOE)
+				wanconfig.isp.dns[1].s_addr = oldcfg.isp.dns[1].s_addr;
+			else if (cfgbak.mode == MODE_PPPOE)
+				wanconfig.isp.dns[1].s_addr = cfgbak.isp.dns[1].s_addr;
+			wanconfig.mode = MODE_PPPOE;
+			arr_strcpy(wanconfig.isp.pppoe.user, user_s);
+			arr_strcpy(wanconfig.isp.pppoe.passwd, passwd_s);
+			memcpy(wanconfig.isp.mac, oldcfg.isp.mac, ETH_ALEN);
+			break;
+		case MODE_STATIC:
+			ip_s = con_value_get(con, "WanIp");
+			gw_s = con_value_get(con, "WanGateWay");
+			mask_s = con_value_get(con, "WanSubnetMask");
+			if (ip_s == NULL || gw_s == NULL || mask_s == NULL)
+				return CGI_ERR_INPUT;
+			//DEBUG("sta-ip=%s,gw=%s,mask=%s",ip_s,gw_s,mask_s);
+			if (checkip(ip_s) || checkip(gw_s) || checkip(mask_s))
+				return CGI_ERR_INPUT;
+			mtu_s = con_value_get(con, "MTU");
+			if (mtu_s)
+				wanconfig.isp.mtu = atoi(mtu_s);
+			else if (oldcfg.mode == MODE_STATIC && oldcfg.isp.mtu > 0)
+				wanconfig.isp.mtu = oldcfg.isp.mtu;
+			else if (cfgbak.mode == MODE_STATIC && cfgbak.isp.mtu > 0)
+				wanconfig.isp.mtu = cfgbak.isp.mtu;
+			else
+				wanconfig.isp.mtu = 1500;
+			if (wanconfig.isp.mtu > 1500 || wanconfig.isp.mtu < 1000)
+				return CGI_ERR_INPUT;		
+			dns_s = con_value_get(con, "WanDns1");
+			if (dns_s) {
+				if (strlen(dns_s) > 0 && checkip(dns_s))
+					return CGI_ERR_INPUT;
+				inet_aton(dns_s, &wanconfig.isp.dns[0]);
+			} else if (oldcfg.mode == MODE_STATIC)
+				wanconfig.isp.dns[0].s_addr = oldcfg.isp.dns[0].s_addr;
+			else if (cfgbak.mode == MODE_STATIC)
+				wanconfig.isp.dns[0].s_addr = cfgbak.isp.dns[0].s_addr;
+			dns1_s = con_value_get(con, "WanDns2");
+			if (dns1_s) {
+				if (strlen(dns1_s) > 0 && checkip(dns1_s))
+					return CGI_ERR_INPUT;
+				inet_aton(dns1_s, &wanconfig.isp.dns[1]);
+			} else if (oldcfg.mode == MODE_STATIC)
+				wanconfig.isp.dns[1].s_addr = oldcfg.isp.dns[1].s_addr;
+			else if (cfgbak.mode == MODE_STATIC)
+				wanconfig.isp.dns[1].s_addr = cfgbak.isp.dns[1].s_addr;	
+			wanconfig.mode = MODE_STATIC;
+			inet_aton(ip_s, &wanconfig.isp.statip.ip);
+			inet_aton(mask_s, &wanconfig.isp.statip.mask);
+			inet_aton(gw_s, &wanconfig.isp.statip.gw);
+			if (checkmask(ntohl(wanconfig.isp.statip.mask.s_addr)))
+				return CGI_ERR_INPUT;
+			if (ip_check2(wanconfig.isp.statip.ip.s_addr, wanconfig.isp.statip.gw.s_addr, wanconfig.isp.statip.mask.s_addr))
+				return CGI_ERR_INPUT;
+			memcpy(wanconfig.isp.mac, oldcfg.isp.mac, ETH_ALEN);
+			break;
+		default:
+			return CGI_ERR_INPUT;
+		}
+		if (mu_msg(IF_MOD_PARAM_SET, &wanconfig, sizeof(wanconfig), NULL, 0))
+		{
+			return CGI_ERR_FAIL;
+		}
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "NetworkTyperesult", obj);	
+		json_object_object_add(response, "retNetworkTyperesult", tmpjs);
+	}
+	else
+	{
+		tmpjs = json_object_new_object();
+		if (mu_msg(IF_MOD_IFACE_INFO, &uid, sizeof(uid), &info, sizeof(info)))
+		{
+			return CGI_ERR_FAIL;
+		}
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		switch(info.mode)
+		{
+			case 1:				
+				obj = json_object_new_string("DHCP");		
+				break;
+			case 2:
+				obj = json_object_new_string("PPPOE");		
+				break;
+			case 3:
+				obj = json_object_new_string("STATIC");		
+				break;
+			default:
+				obj = json_object_new_string("DHCP");		
+				break;
+		}
+		json_object_object_add(tmpjs, "NetworkType", obj);
+		if(info.mode == 2)
+		{
+			if (mu_msg(IF_MOD_PARAM_SHOW, &uid, sizeof(uid), &wanconfig, sizeof(wanconfig)))
+			{
+				return CGI_ERR_FAIL;
+			}
+			obj = json_object_new_string("0");
+			json_object_object_add(tmpjs, "SpecialPPPOE", obj);
+			obj = json_object_new_string(wanconfig.isp.pppoe.user);
+			json_object_object_add(tmpjs, "PPPOEUsername", obj);
+			obj = json_object_new_string(wanconfig.isp.pppoe.passwd);
+			json_object_object_add(tmpjs, "PPPOEPassword", obj);
+		}
+		
+		obj = json_object_new_string(inet_ntoa(info.ip));
+		json_object_object_add(tmpjs, "WanIp", obj);
+		obj = json_object_new_string(inet_ntoa(info.mask));
+		json_object_object_add(tmpjs, "WanSubnetMask", obj);
+		obj= json_object_new_string(inet_ntoa(info.gw));
+		json_object_object_add(tmpjs, "WanGateWay", obj);
+		obj= json_object_new_string(inet_ntoa(info.dns[0]));
+		json_object_object_add(tmpjs, "WanDns1", obj);
+		obj= json_object_new_string(inet_ntoa(info.dns[1]));
+		json_object_object_add(tmpjs, "WanDns2", obj);
+		sprintf(macstr,"%d",info.mtu);
+		obj= json_object_new_string(macstr);
+		json_object_object_add(tmpjs, "MTU", obj);
+		//DEBUG("enduuu");
+		json_object_object_add(response, "retNetworkTypeInfo", tmpjs);
+	}
+	
+	
+	return 0;
+}
+
+int cgi_fx_parameterlist_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int ac=0;
+	int uid = 1;
+	int ret = 0;	
+	char macstr[18]={0};
+	struct iface_info info;
+	struct iface_conf laninfo;
+	struct wifi_conf wlanconfig;
+	struct json_object* obj,*tmpjs = NULL;
+	struct dhcp_conf dhcpconfig;
+	struct if_statistics statis;
+	
+	
+	if (connection_is_set_lktos(con))
+	{
+		
+	}
+	else
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_string("PSG1208");
+		json_object_object_add(tmpjs, "MODEL", obj);
+		memset(&laninfo, 0x0, sizeof(laninfo));
+		uid = 0;
+		if (mu_msg(IF_MOD_PARAM_SHOW, &uid, sizeof(uid), &laninfo, sizeof(laninfo)))
+		{
+			return CGI_ERR_FAIL;
+		}
+		DEBUG("get the lan mac");
+		sprintf(macstr,"%02X:%02x:%02x:%02x:%02x:%02x",MAC_SPLIT(laninfo.isp.mac));
+		obj = json_object_new_string(macstr);
+		json_object_object_add(tmpjs, "MAC", obj);
+		obj = json_object_new_string("V1.0");
+		json_object_object_add(tmpjs, "HWVER", obj);
+		obj = json_object_new_string("V1.0.0.15");
+		json_object_object_add(tmpjs, "SWVER", obj);
+		obj = json_object_new_int(sys_uptime());
+		json_object_object_add(tmpjs, "UPTIME", obj);
+		memset(&info, 0x0, sizeof(info));
+		uid = 1;
+		if (mu_msg(IF_MOD_IFACE_INFO, &uid, sizeof(uid), &info, sizeof(info)))
+		{
+			return CGI_ERR_FAIL;
+		}
+		//DEBUG("get the lan mac 2");
+		obj = json_object_new_string(inet_ntoa(info.ip));
+		json_object_object_add(tmpjs, "WANIP", obj);
+		
+		if (mu_msg(DNSMASQ_DHCP_SHOW, NULL, 0, &dhcpconfig, sizeof(dhcpconfig)))
+		{
+			return CGI_ERR_FAIL;
+		}
+		//DEBUG("get the lan mac 3");
+		obj= json_object_new_string(inet_ntoa(dhcpconfig.ip));
+		json_object_object_add(tmpjs, "LANIP", obj);
+		
+		if (mu_msg(WIFI_MOD_GET_CONF, NULL, 0, &wlanconfig, sizeof(wlanconfig)))
+		{
+			return CGI_ERR_FAIL;
+		}
+		//DEBUG("get the lan mac 4");
+		obj = json_object_new_string(wlanconfig.ssid);
+		json_object_object_add(tmpjs, "SSID", obj);
+		obj = json_object_new_string(wlanconfig.vssid);
+		json_object_object_add(tmpjs, "SSID2", obj);
+		
+		get_if_statistics(1, &statis);
+		ret = (int)(statis.out.all.speed/1024);
+		obj = json_object_new_int(ret >ret);
+		json_object_object_add(tmpjs, "UPRATE", obj);
+		ret = (int)(statis.in.all.speed/1024);
+		obj = json_object_new_int(ret);
+		json_object_object_add(tmpjs, "DOWNRATE", obj);
+	
+		if (!mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &wlanconfig, sizeof(wlanconfig)))
+		{
+			ac = 1;
+		}
+		if(ac)
+		{
+			
+			obj = json_object_new_string(wlanconfig.ssid);
+			json_object_object_add(tmpjs, "SSID_5G", obj);
+			obj = json_object_new_string(wlanconfig.vssid);
+			json_object_object_add(tmpjs, "SSID2_5G", obj);
+			
+		}
+		
+		obj = json_object_new_int(0);
+		json_object_object_add(tmpjs, "CPULOAD", obj);
+		obj = json_object_new_int(73);
+		json_object_object_add(tmpjs, "RAMLOAD", obj);
+		obj = json_object_new_string("OFF");
+		json_object_object_add(tmpjs, "ParentLock", obj);
+		obj = json_object_new_string("ON");
+		json_object_object_add(tmpjs, "WIFISignalEnhancement", obj);	
+		
+		json_object_object_add(response, "retSysInfo", tmpjs);
+	}
+	
+	
+	return 0;
+}
+int cgi_fx_firstlogin_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	struct json_object* obj,*tmpjs = NULL;
+	
+	if (!connection_is_set_lktos(con)) 
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(0);
+		json_object_object_add(tmpjs, "FirstLogin", obj);	
+		json_object_object_add(response, "retFirstLogininfo", tmpjs);
+	}
+	return 0;
+}
+
+int cgi_fx_wirelesssetup_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int ac=0;
+	char tmpbuf[64]={0};
+	struct wifi_conf wlanconfig;
+	struct json_object* obj,*tmpjs = NULL;
+	char *ssid = NULL, *passwd = NULL;	
+	char *channel = NULL, *hidden = NULL, *bw = NULL;	
+	struct nlk_sys_msg nlk;
+	
+	if (connection_is_set_lktos(con))
+	{
+		ssid = con_value_get(con, "SSID");
+		if(ssid != NULL)
+		{
+			passwd = con_value_get(con, "PASSWORD");
+			hidden = con_value_get(con, "BroadcatsSSID_24G");
+			memset(&wlanconfig, 0x0, sizeof(wlanconfig));		
+			if (mu_msg(WIFI_MOD_GET_CONF, NULL, 0, &wlanconfig, sizeof(wlanconfig)))			
+			{
+				return CGI_ERR_FAIL;
+			}
+			wlanconfig.htbw=1;
+			wlanconfig.channel=0;
+			arr_strcpy(wlanconfig.ssid, ssid);
+			if (passwd == NULL ||!strlen(passwd))
+			{
+				arr_strcpy(wlanconfig.encryption, "none");		
+			}
+			else 
+			{			
+				if (!strcmp(wlanconfig.encryption, "none"))
+				{
+					arr_strcpy(wlanconfig.encryption, "psk2+ccmp");	
+				}
+				arr_strcpy(wlanconfig.key, passwd);		
+			}
+			if(!strncmp(hidden,"OFF",3))
+			{
+					wlanconfig.hidssid=1;
+			}
+			else
+			{
+					wlanconfig.hidssid=0;
+			}
+			if (mu_msg(WIFI_MOD_SET_AP, &wlanconfig, sizeof(wlanconfig), NULL, 0))			
+				return CGI_ERR_FAIL;		
+			memset(&nlk, 0x0, sizeof(nlk));		
+			nlk.comm.gid = NLKMSG_GRP_SYS;		
+			nlk.comm.mid = SYS_GRP_MID_WIFI;		
+			nlk.msg.wifi.type = 2;		
+			nlk_event_send(NLKMSG_GRP_SYS, &nlk, sizeof(nlk));
+		}
+		
+		memset(&wlanconfig, 0x0, sizeof(wlanconfig));
+		if (!mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &wlanconfig, sizeof(wlanconfig)))			
+		{
+			ssid = con_value_get(con, "SSID_5G");
+			if(ssid != NULL)
+			{
+				passwd = con_value_get(con, "PASSWORD_5G");
+				hidden = con_value_get(con, "BroadcatsSSID_5G");
+				
+				wlanconfig.htbw=1;
+				wlanconfig.channel=149;
+				arr_strcpy(wlanconfig.ssid, ssid);
+				if (passwd == NULL ||!strlen(passwd))
+				{
+					arr_strcpy(wlanconfig.encryption, "none");		
+				}
+				else 
+				{			
+					if (!strcmp(wlanconfig.encryption, "none"))
+					{
+						arr_strcpy(wlanconfig.encryption, "psk2+ccmp");	
+					}
+					arr_strcpy(wlanconfig.key, passwd);		
+				}
+				if(!strncmp(hidden,"OFF",3))
+				{
+						wlanconfig.hidssid=1;
+				}
+				else
+				{
+						wlanconfig.hidssid=0;
+				}
+				if (mu_msg(WIFI_MOD_SET_AP, &wlanconfig, sizeof(wlanconfig), NULL, 0))			
+					return CGI_ERR_FAIL;			
+			}
+		}
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "Wlansetresult", obj);	
+		json_object_object_add(response, "retWlansetresult", tmpjs);
+	}
+	else
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_string("MTK");
+		json_object_object_add(tmpjs, "CPUInfo", obj);
+		obj = json_object_new_string("ON");
+		json_object_object_add(tmpjs, "STATUS", obj);
+		
+		obj = json_object_new_string("ROUTER");
+		json_object_object_add(tmpjs, "MODE", obj);
+		
+
+		if (mu_msg(WIFI_MOD_GET_CONF, NULL, 0, &wlanconfig, sizeof(wlanconfig)))
+		{
+			return CGI_ERR_FAIL;
+		}
+		sprintf(tmpbuf,"%d",wlanconfig.txrate);
+		obj = json_object_new_string(tmpbuf);
+		json_object_object_add(tmpjs, "TXPOWER", obj);
+		obj = json_object_new_string(wlanconfig.ssid);
+		json_object_object_add(tmpjs, "SSID", obj);
+		obj = json_object_new_string(wlanconfig.vssid);
+		json_object_object_add(tmpjs, "SSID2", obj);
+		if(!strncmp(wlanconfig.encryption,"none",4))
+		{
+			obj = json_object_new_string("");
+		}
+		else
+		{
+			
+			obj = json_object_new_string(wlanconfig.key);
+		}		
+		json_object_object_add(tmpjs, "24GPassword", obj);
+		if (!mu_msg(WIFI_MOD_GET_CONF_5G, NULL, 0, &wlanconfig, sizeof(wlanconfig)))
+		{
+			ac = 1;
+		}
+		if(ac)
+		{
+			obj = json_object_new_string("1");
+			json_object_object_add(tmpjs, "HAS5G", obj);
+			obj = json_object_new_string("ON");
+			json_object_object_add(tmpjs, "STATUS_5G", obj);
+			obj = json_object_new_string("ROUTER");
+			json_object_object_add(tmpjs, "MODE_5G", obj);
+			obj = json_object_new_string("100");
+			json_object_object_add(tmpjs, "TXPOWER_5G", obj);
+			obj = json_object_new_string(wlanconfig.ssid);
+			json_object_object_add(tmpjs, "SSID_5G", obj);
+			obj = json_object_new_string(wlanconfig.ssid);
+			json_object_object_add(tmpjs, "SSID2_5G", obj);
+			if(!strncmp(wlanconfig.encryption,"none",4))
+			{
+				obj = json_object_new_string("");
+			}
+			else
+			{
+				
+				obj = json_object_new_string(wlanconfig.key);
+			}		
+		json_object_object_add(tmpjs, "5GPassword", obj);
+		}
+		else
+		{
+			obj = json_object_new_string("0");
+			json_object_object_add(tmpjs, "HAS5G", obj);
+		}
+		obj = json_object_new_string("OFF");
+		json_object_object_add(tmpjs, "ParentLock", obj);
+		obj = json_object_new_string("ON");
+		json_object_object_add(tmpjs, "WIFISignalEnhancement", obj);
+		obj = json_object_new_string("OFF");
+		json_object_object_add(tmpjs, "OpenPorts", obj);
+
+		json_object_object_add(response, "retWlanInfo", tmpjs);
+	}
+	
+	
+	return 0;
+}
+
+
+int cgi_fx_lanipsetup_handler(server_t* srv, connection_t *con, struct json_object*response)
+{	
+	return CGI_ERR_FAIL;			
+}
+
+int cgi_fx_alreadylogin_handler(server_t* srv, connection_t *con, struct json_object*response)
+{	
+	int ac=0;
+	int uid = 1;
+	int ret = 0;	
+	char macstr[18]={0};
+	struct iface_info info;
+	struct iface_conf laninfo;
+	struct wifi_conf wlanconfig;
+	struct json_object* obj,*tmpjs = NULL;
+	struct dhcp_conf dhcpconfig;
+	struct if_statistics statis;
+	struct sys_account countinfo, countpre;
+	char *ptr = NULL;
+	char authstr[64];
+	
+	if (connection_is_set_lktos(con))
+	{
+		
+	}
+	else
+	{
+		tmpjs = json_object_new_object();
+		
+		obj = json_object_new_int(0);
+		json_object_object_add(tmpjs, "LOGINSTATUS", obj);
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		memset(&laninfo, 0x0, sizeof(laninfo));
+		uid = 0;
+		if (mu_msg(IF_MOD_PARAM_SHOW, &uid, sizeof(uid), &laninfo, sizeof(laninfo)))
+		{
+			return CGI_ERR_FAIL;
+		}
+		//DEBUG("get the lan mac");
+		sprintf(macstr,"%02X:%02x:%02x:%02x:%02x:%02x",MAC_SPLIT(laninfo.isp.mac));
+		obj = json_object_new_string(macstr);
+		json_object_object_add(tmpjs, "MAC", obj);
+		obj = json_object_new_string("PSG1208");
+		json_object_object_add(tmpjs, "MODEL", obj);
+		if (mu_msg(SYSTME_MOD_GET_ACCOUNT, NULL, 0, &countpre, sizeof(countpre)))
+		{
+			return CGI_ERR_FAIL;
+		}
+		
+		obj = json_object_new_string(countpre.user);
+		json_object_object_add(tmpjs, "USERNAME", obj);
+		base64_encode(countpre.password, strlen(countpre.password), authstr, 64);
+		obj = json_object_new_string(authstr);
+		json_object_object_add(tmpjs, "PASSWORD", obj);
+		json_object_object_add(response, "retLoginstatus", tmpjs);
+		DEBUG("get the pass--%s",countpre.password);
+	}
+	return 0;		
+}
+
+int cgi_fx_routeradminsetup_handler(server_t* srv, connection_t *con, struct json_object*response)
+{	
+	char *ptr = NULL;
+	struct sys_account info, pre;	
+	struct json_object* obj,*tmpjs = NULL;
+	unsigned char getPassword[16]={0};
+
+	if (connection_is_set_lktos(con)) 
+	{
+		CON_GET_STR(ptr, con, info.user, "RouterAdminName");
+		CON_GET_STR(ptr, con, getPassword, "RouterAdminPassword");
+		//CON_GET_STR(ptr, con, info.password, "password");
+		if (strcmp(info.user, "admin"))
+			return CGI_ERR_INPUT;
+		if (mu_msg(SYSTME_MOD_GET_ACCOUNT, NULL, 0, &pre, sizeof(pre)))
+			return CGI_ERR_FAIL;
+		//DEBUG("ff-%s",getPassword);
+		base64_decode(getPassword,info.password,16);
+		//DEBUG("truepassword=%s",info.password);
+		//if (!strcmp(pre.password, info.password))
+			//return 0;
+		if (mu_msg(SYSTME_MOD_SET_ACCOUNT, &info, sizeof(info), NULL, 0))
+			return CGI_ERR_FAIL;
+		server_clean(srv);
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "RouteAdminSetupresult", obj);	
+		json_object_object_add(response, "retRouteAdminSetupresult", tmpjs);
+	}
+	return 0;		
+}
+int cgi_fx_updatecheck_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	
+	struct json_object* obj,*tmpjs = NULL;
+
+	if (!connection_is_set_lktos(con)) 
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "UpdateCheck", obj);	
+		json_object_object_add(response, "retUpdateCheckinfo", tmpjs);
+	}
+}
+int cgi_fx_openports_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	
+	struct json_object* obj,*tmpjs = NULL;
+	if (connection_is_set_lktos(con)) 
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "OpenPortsresult", obj);	
+		json_object_object_add(response, "retOpenPortsresult", tmpjs);
+	}			
+}
+int cgi_fx_reboot_handler(server_t* srv, connection_t *con, struct json_object*response)
+{	
+	char *tmpPtr=NULL;
+	struct json_object* obj,*tmpjs = NULL;
+	
+	tmpPtr = con_value_get(con, "action");
+	if(!strncmp(tmpPtr,"reboot",6))
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "Rebootresult", obj);	
+		json_object_object_add(response, "retRebootresult", tmpjs);
+		if (mu_msg(SYSTEM_MOD_SYS_REBOOT, NULL, 0, NULL, 0))	
+		{
+			return CGI_ERR_FAIL;
+		}
+		return 0;
+	}
+	else
+	{
+		return CGI_ERR_FAIL;
+	}
+}
+int cgi_fx_loaddefault_handler(server_t* srv, connection_t *con, struct json_object*response)
+{	
+	char *tmpPtr=NULL;
+	int flag = SYSFLAG_RECOVER;
+	struct json_object* obj,*tmpjs = NULL;
+	
+	tmpPtr = con_value_get(con, "action");
+	if(!strncmp(tmpPtr,"loaddefault",12))
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "Restoreresult", obj);	
+		json_object_object_add(response, "retRestoreresult", tmpjs);
+		if (mu_msg(SYSTEM_MOD_SYS_DEFAULT, &flag, sizeof(int), NULL, 0))
+		{
+			return CGI_ERR_FAIL;
+		}
+		return 0;
+	}
+	else
+	{
+		return CGI_ERR_FAIL;
+	}			
+}
+int cgi_fx_wifisignalenhancement_handler(server_t* srv, connection_t *con, struct json_object*response)
+{	
+	int txrate;
+	char *txrates = NULL;
+	struct wifi_conf wlanconfig;
+	struct json_object* obj,*tmpjs = NULL;
+
+	if (connection_is_set_lktos(con)) 
+	{
+		txrates = con_value_get(con, "WIFISignalEnhancement");
+		if (txrates == NULL)
+		{
+			return CGI_ERR_INPUT;
+		}
+		if(!strcmp(txrates,"OFF"))
+		{
+			txrate=63;
+		}
+		else
+		{
+			txrate=100;
+		}
+		 
+		if (mu_msg(WIFI_MOD_SET_TXRATE, &txrate, sizeof(txrate), NULL, 0))
+			return CGI_ERR_FAIL;
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "WIFISignalEnhancementResult", obj);	
+		json_object_object_add(response, "retWIFISignalEnhancementSetResult", tmpjs);
+		return 0;
+	}		
+}
+
+int cgi_fx_login_handler(server_t* srv, connection_t *con, struct json_object*response)
+{	
+	char *ptr = NULL;
+	struct sys_account info, pre;	
+	struct json_object* obj,*tmpjs = NULL;
+	unsigned char getPassword[16]={0};
+
+	
+	CON_GET_STR(ptr, con, info.user, "username");
+	CON_GET_STR(ptr, con, getPassword, "password");
+	//CON_GET_STR(ptr, con, info.password, "password");
+	if (strcmp(info.user, "admin"))
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "Unauthorized", obj);	
+		json_object_object_add(response, "retLoginresult", tmpjs);
+		return 0;
+	}
+	if (mu_msg(SYSTME_MOD_GET_ACCOUNT, NULL, 0, &pre, sizeof(pre)))
+	{
+		return CGI_ERR_FAIL;
+	}
+	//DEBUG("ff-%s",getPassword);
+	base64_decode(getPassword,info.password,16);
+	//DEBUG("truepassword=%s",info.password);
+	if (strcmp(pre.password, info.password))
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "Unauthorized", obj);	
+		json_object_object_add(response, "retLoginresult", tmpjs);
+		return 0;
+	}
+	tmpjs = json_object_new_object();
+	obj = json_object_new_int(con->login);
+	json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+	obj = json_object_new_string("OK");
+	json_object_object_add(tmpjs, "RESULT", obj);	
+	json_object_object_add(response, "retLoginresult", tmpjs);
+	if (con->ip_from)
+	{
+		server_list_add(con->ip_from, srv);
+	}
+
+	return 0;		
+}
+
+int cgi_fx_clientlist_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int i=0;
+	int host_nr = 0;	
+	struct json_object* obj,*ts,*t,*tmpjs = NULL;
+	struct host_dump_info host[IGD_HOST_MX];
+	
+	if (connection_is_set_lktos(con))
+	{
+		
+	}
+	else
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(0);
+		json_object_object_add(tmpjs, "DeviceRenameMax", obj);
+
+		host_nr = mu_msg(IGD_HOST_DUMP, NULL, 0, host, sizeof(host));
+		if (host_nr < 0) 
+		{
+			CGI_PRINTF("dump host err, ret:%d\n", host_nr);
+			return CGI_ERR_FAIL;
+		}
+
+		ts = json_object_new_array();
+		for (i = 0; i < host_nr; i++) 
+		{
+			t = get_host_json_fx(&host[i], con->ip_from);
+
+			json_object_array_add(ts, t);
+		}
+		
+		json_object_object_add(tmpjs, "Clientlist", ts);
+		json_object_object_add(response, "retClientInfo", tmpjs);
+	}
+	
+	
+	return 0;
+}
+
+int cgi_fx_macfilter_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int i=0;
+	int flag=0;
+	int host_nr = 0;
+	char *action=NULL;
+	char *ttaction=NULL;
+	char *ptr = NULL;
+	struct json_object* obj,*ts,*t,*tmpjs = NULL;
+	struct host_set_info info;
+	struct host_dump_info host[IGD_HOST_MX];
+
+	action=con_value_get(con, "action");
+//	DEBUG("fsdf-%s",action);
+	if(action)
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		host_nr = mu_msg(IGD_HOST_DUMP, NULL, 0, host, sizeof(host));
+		if (host_nr < 0) 
+		{
+			CGI_PRINTF("dump host err, ret:%d\n", host_nr);
+			return CGI_ERR_FAIL;
+		}
+
+		ts = json_object_new_array();
+		for (i = 0; i < host_nr; i++) 
+		{
+			t = get_host_json_fx_macfilterlist(&host[i], con->ip_from,&flag);
+
+			json_object_array_add(ts, t);
+		}
+		
+		json_object_object_add(tmpjs, "Blocklist", ts);
+		json_object_object_add(response, "retBlockmac", tmpjs);
+		return 0;
+	}
+	else
+	{
+		ttaction=con_value_get(con, "ACTION");
+		DEBUG("AC=%s",ttaction);
+		if(!strncmp(ttaction,"ADD",3))
+		{
+			
+			
+
+			memset(&info, 0, sizeof(info));
+			CON_GET_MAC_FX(ptr, con, info.mac);
+			info.act=0;
+			if (mu_msg(IGD_HOST_SET_BLACK, &info, sizeof(info), NULL, 0) < 0)
+				return CGI_ERR_FAIL;
+			tmpjs = json_object_new_object();
+			obj = json_object_new_int(con->login);
+			json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+			obj = json_object_new_int(1);
+			json_object_object_add(tmpjs, "Blockaddresult", obj);
+			json_object_object_add(response, "retBlockaddresult", tmpjs);
+			return 0;
+		}
+		else if(!strncmp(ttaction,"DELETE",6))
+		{
+			memset(&info, 0, sizeof(info));
+			CON_GET_MAC_FX(ptr, con, info.mac);
+			info.act=2;
+			if (mu_msg(IGD_HOST_SET_BLACK, &info, sizeof(info), NULL, 0) < 0)
+				return CGI_ERR_FAIL;
+			tmpjs = json_object_new_object();
+			obj = json_object_new_int(con->login);
+			json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+			obj = json_object_new_int(1);
+			json_object_object_add(tmpjs, "Blockdelresult", obj);
+			json_object_object_add(response, "retBlockdelresult", tmpjs);
+			return 0;
+		}
+		else
+		{
+			return 0;
+		}	
+	}	
+}
+
+int cgi_fx_macfliter_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	int i=0;
+	int flag=0;
+	int host_nr = 0;
+	char *action=NULL;
+	char *ttaction=NULL;
+	char *ptr = NULL;
+	struct json_object* obj,*ts,*t,*tmpjs = NULL;
+	struct host_set_info info;
+	struct host_dump_info host[IGD_HOST_MX];
+
+	action=con_value_get(con, "action");
+	DEBUG("fsdf-%s",action);
+	if(!strncmp(action,"get",3))
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		host_nr = mu_msg(IGD_HOST_DUMP, NULL, 0, host, sizeof(host));
+		if (host_nr < 0) 
+		{
+			CGI_PRINTF("dump host err, ret:%d\n", host_nr);
+			return CGI_ERR_FAIL;
+		}
+
+		ts = json_object_new_array();
+		for (i = 0; i < host_nr; i++) 
+		{
+			t = get_host_json_fx_macfilterlist(&host[i], con->ip_from,&flag);
+			if(flag)
+			{
+				json_object_array_add(ts, t);
+			}
+		}
+		
+		json_object_object_add(tmpjs, "Blocklist", ts);
+		json_object_object_add(response, "retBlockmac", tmpjs);
+		return 0;
+	}
+	else
+	{
+		ttaction=con_value_get(con, "ACTION");
+		DEBUG("AC=%s",ttaction);
+		if(!strncmp(ttaction,"ADD",3))
+		{
+			memset(&info, 0, sizeof(info));
+			CON_GET_MAC_FX(ptr, con, info.mac);
+			info.act=0;
+			if (mu_msg(IGD_HOST_SET_BLACK, &info, sizeof(info), NULL, 0) < 0)
+				return CGI_ERR_FAIL;
+			tmpjs = json_object_new_object();
+			obj = json_object_new_int(con->login);
+			json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+			obj = json_object_new_int(1);
+			json_object_object_add(tmpjs, "Blockaddresult", obj);
+			json_object_object_add(response, "retBlockaddresult", tmpjs);
+			return 0;
+		}
+		else if(!strncmp(ttaction,"DELETE",6))
+		{
+			memset(&info, 0, sizeof(info));
+			CON_GET_MAC_FX(ptr, con, info.mac);
+			info.act=2;
+			if (mu_msg(IGD_HOST_SET_BLACK, &info, sizeof(info), NULL, 0) < 0)
+				return CGI_ERR_FAIL;
+			tmpjs = json_object_new_object();
+			obj = json_object_new_int(con->login);
+			json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+			obj = json_object_new_int(1);
+			json_object_object_add(tmpjs, "Blockdelresult", obj);
+			json_object_object_add(response, "retBlockdelresult", tmpjs);
+			return 0;
+		}
+		else
+		{
+			return 0;
+		}	
+	}	
+}
+
+
+int cgi_fx_devicerename_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	
+	struct json_object* obj,*tmpjs = NULL;
+	struct host_set_info info;
+	int len;
+	char *ptr = NULL;
+	
+	if (connection_is_set_lktos(con))
+	{
+		memset(&info, 0, sizeof(info));
+		CON_GET_MAC_FX2(ptr, con, info.mac);
+
+		ptr = con_value_get(con, "DeviceRename");
+		if (ptr) 
+		{
+			len = strlen(ptr);
+			if (len >= sizeof(info.v.name))
+			{
+				return CGI_ERR_INPUT;
+			} else if (len) 
+			{
+				arr_strcpy(info.v.name, ptr);
+			}
+		}
+		if (mu_msg(IGD_HOST_SET_NICK, &info, sizeof(info), NULL, 0) < 0)
+			return CGI_ERR_FAIL;
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "ALREADYLOGIN", obj);
+		obj = json_object_new_int(1);
+		json_object_object_add(tmpjs, "DeviceRenameresult", obj);
+		json_object_object_add(response, "retDeviceRenameresult", tmpjs);
+	}
+	return 0;
+
+}
+
+int cgi_fx_loginstatus_handler(server_t* srv, connection_t *con, struct json_object*response)
+{
+	struct json_object* obj,*tmpjs = NULL;
+	
+	if (!connection_is_set_lktos(con)) 
+	{
+		tmpjs = json_object_new_object();
+		obj = json_object_new_int(con->login);
+		json_object_object_add(tmpjs, "LOGINSTATUS", obj);
+		obj = json_object_new_string("PSG1208");
+		json_object_object_add(tmpjs, "MODEL", obj);	
+		json_object_object_add(response, "retDevicestatus", tmpjs);
+	}
+	return 0;
+}
+
+

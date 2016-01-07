@@ -10,6 +10,9 @@ void connection_parse(connection_t *con,char *src);
 void connection_write(connection_t* con);
 void connection_free(connection_t *con);
 extern int cgi_protocol_handler(server_t*srv,connection_t *con,struct json_object* response);
+
+//by luot
+extern int cgi_protocol_handler_lktos(server_t*srv,connection_t *con,struct json_object* response);
 extern int deflate_file_to_buffer_gzip(char*dest,int len, char *start, off_t st_size, time_t mtime);
 
 void v_list_init (v_list_t *head)
@@ -211,7 +214,7 @@ int con_check_read_finish(connection_t* con)
 		return 1;
 	}
 	*uriend++ = '\0';
-	DEBUG("uri=%s,fd=%d\n", uri, con->fd);
+	DEBUG("tturi=%s,fd=%d\n", uri, con->fd);
 	query =strchr(uri, '?');
 	if (query == NULL) {
 		DEBUG("error3\n");
@@ -267,9 +270,17 @@ void connection_read(connection_t* con)
 		if (con->state != CON_STATE_ERROR) {
 			int error = 0;
 			struct json_object* obj_error;;
-			error = cgi_protocol_handler(&srv,con,con->response);
-			obj_error= json_object_new_int(error);
-			json_object_object_add(con->response, "error",obj_error);
+			if(strstr(con->csp,".asp"))
+			{
+				DEBUG("is asp");
+				error = cgi_protocol_handler_lktos(&srv,con,con->response);
+			}
+			else
+			{
+				error = cgi_protocol_handler(&srv,con,con->response);
+				obj_error= json_object_new_int(error);
+				json_object_object_add(con->response, "error",obj_error);
+			}			
 			connection_response(con);
 			connection_write(con);
 			DEBUG("error=%d\n",error);
@@ -502,3 +513,22 @@ int connection_is_set(connection_t *con)
 	}
 	return -1;
 }
+int connection_is_set_lktos(connection_t *con)
+{
+	char* function = NULL;
+	
+	if (con->function != -1)
+		return con->function;
+	function = con_value_get(con, "action");
+	if (function == NULL)
+		return -1;
+	if (strcmp(function, "get") == 0) {
+		con->function = 0;
+		return 0;
+	} else if (strcmp(function, "set") == 0) {
+		con->function = 1;
+		return 1;
+	}
+	return -1;
+}
+

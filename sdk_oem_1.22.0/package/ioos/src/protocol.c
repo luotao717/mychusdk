@@ -72,6 +72,36 @@
 #define PRO_SYS_MTD_PARAM "mtd_param"
 #define PRO_SYS_UP_READY  "up_ready"
 
+//by luot
+#define PRO_FX_NETWORKTYPE  "/networktype.asp"
+#define PRO_FX_PARAMETERLIST  "/parameterlist.asp"
+#define PRO_FX_FIRSTLOGIN  "/FirstLogin.asp"
+#define PRO_FX_WIRELESSSETUP  "/wirelesssetup.asp"
+#define PRO_FX_LANIPSETUP  "/LANIP.asp"
+
+#define PRO_FX_ALREADYLOGIN  "/alreadylogin.asp"
+#define PRO_FX_ROUTERADMINSETUP  "/routeradminsetup.asp"
+#define PRO_FX_UPDATECHECK  "/UpdateCheck.asp"
+#define PRO_FX_OPENPORTS  "/OpenPorts.asp"
+#define PRO_FX_REBOOT  "/reboot.asp"
+#define PRO_FX_LOADDEFAULT  "/loaddefault.asp"
+#define PRO_FX_WIFISIGNALENHANCEMENT  "/WIFISignalEnhancement.asp"
+#define PRO_FX_LOGIN  "/login.asp"
+#define PRO_FX_CLIENTLIST  "/clientlist.asp"
+#define PRO_FX_MACFILTER  "/macfilter.asp"
+#define PRO_FX_MACFLITER  "/macfliter.asp"
+#define PRO_FX_DEVICERENAME  "/DeviceRename.asp"
+#define PRO_FX_LOGINSTATUS  "/loginstatus.asp"
+
+
+
+//#define PRO_FX_REBOOT  "/reboot.asp"
+
+
+
+
+
+
 extern int pro_net_ap_list_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_ap_list_5g_handler(server_t* srv, connection_t *con, struct json_object*response);
 extern int pro_net_wan_set_handler(server_t* srv, connection_t *con, struct json_object*response);
@@ -140,6 +170,30 @@ extern int cgi_net_app_queue_handler(server_t *srv, connection_t *con, struct js
 extern int cgi_net_vpn_handler(server_t *srv, connection_t *con, struct json_object *response);
 extern int cgi_mtd_param_handler(server_t *srv, connection_t *con, struct json_object *response);
 extern int cgi_up_ready_handler(server_t *srv, connection_t *con, struct json_object *response);
+
+//by luot
+extern int cgi_fx_networktype_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_parameterlist_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_firstlogin_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_wirelesssetup_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_lanipsetup_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_alreadylogin_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_routeradminsetup_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_updatecheck_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_openports_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_reboot_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_loaddefault_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_wifisignalenhancement_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_login_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_clientlist_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_macfilter_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_macfliter_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_devicerename_handler(server_t* srv, connection_t *con, struct json_object*response);
+extern int cgi_fx_loginstatus_handler(server_t* srv, connection_t *con, struct json_object*response);
+
+
+
+
 
 static cgi_protocol_t pro_list[] ={
 	{PRO_SYS_MAIN, cgi_sys_main_handler},
@@ -214,10 +268,35 @@ static cgi_protocol_t pro_list[] ={
 	{PRO_RESET_FIRST_LOGIN, pro_reset_first_login_handler},
 	{NULL, NULL},
 };
+static cgi_protocol_t pro_list_lktos[] ={
+	{PRO_FX_NETWORKTYPE, cgi_fx_networktype_handler},
+	{PRO_FX_PARAMETERLIST, cgi_fx_parameterlist_handler},
+	{PRO_FX_FIRSTLOGIN, cgi_fx_firstlogin_handler},
+	{PRO_FX_WIRELESSSETUP, cgi_fx_wirelesssetup_handler},
+	{PRO_FX_LANIPSETUP, cgi_fx_lanipsetup_handler},
+	{PRO_FX_ALREADYLOGIN, cgi_fx_alreadylogin_handler},
+	{PRO_FX_ROUTERADMINSETUP, cgi_fx_routeradminsetup_handler},
+	{PRO_FX_UPDATECHECK, cgi_fx_updatecheck_handler},
+	{PRO_FX_OPENPORTS, cgi_fx_openports_handler},
+	{PRO_FX_REBOOT, cgi_fx_reboot_handler},
+	{PRO_FX_LOADDEFAULT, cgi_fx_loaddefault_handler},
+	{PRO_FX_WIFISIGNALENHANCEMENT,cgi_fx_wifisignalenhancement_handler},
+	{PRO_FX_LOGIN,cgi_fx_login_handler},
+	{PRO_FX_CLIENTLIST,cgi_fx_clientlist_handler},
+	{PRO_FX_MACFILTER,cgi_fx_macfilter_handler},
+	{PRO_FX_MACFLITER,cgi_fx_macfliter_handler},
+	{PRO_FX_DEVICERENAME,cgi_fx_devicerename_handler},
+	{PRO_FX_LOGINSTATUS,cgi_fx_loginstatus_handler},
+	{NULL, NULL},
+};
 
+//by luot
+cgi_protocol_t* find_pro_handler_lktos(const char * pro_opt);
 cgi_protocol_t* find_pro_handler(const char * pro_opt);
 
 int cgi_protocol_handler(server_t*srv,connection_t *con,struct json_object* response);
+//by luot
+int cgi_protocol_handler_lktos(server_t*srv,connection_t *con,struct json_object* response);
 
 static void update(connection_t * con,server_t *srv)
 {
@@ -239,6 +318,24 @@ static void update(connection_t * con,server_t *srv)
 #endif
 }
 
+static void update_lktos(connection_t * con,server_t *srv)
+{
+#if 1
+	if (con->ip_from && strcmp(con->ip_from, "127.0.0.1")) {
+		if (server_list_update(con->ip_from,srv) == 0) {
+			con->login = 1;
+		} else {
+			
+				con->login = 0;
+			
+		}
+	} else {
+		con->login = 1;
+	}
+#endif
+}
+
+
 int cgi_protocol_handler(server_t*srv,connection_t *con,struct json_object* response){
 	struct json_object* obj;
     char* opt = con_value_get(con,"opt");
@@ -251,6 +348,7 @@ int cgi_protocol_handler(server_t*srv,connection_t *con,struct json_object* resp
     }
     cgi_protocol_t* cur_protocol;
     cur_protocol = find_pro_handler(opt);
+	DEBUG("request=%s\n",con->request);
     if(cur_protocol == NULL){
         return PRO_BASE_ARG_ERR;
     }
@@ -272,6 +370,21 @@ int cgi_protocol_handler(server_t*srv,connection_t *con,struct json_object* resp
     return cur_protocol->handler(srv,con,response);
 }
 
+// by luot 
+int cgi_protocol_handler_lktos(server_t*srv,connection_t *con,struct json_object* response){
+	struct json_object* obj;
+   
+    cgi_protocol_t* cur_protocol;
+    cur_protocol = find_pro_handler_lktos(con->csp);
+	DEBUG("request=%s\n",con->csp);
+    if(cur_protocol == NULL){
+        return PRO_BASE_ARG_ERR;
+    }
+	update_lktos(con,srv);
+	DEBUG("go to hanle function\n");
+    return cur_protocol->handler(srv,con,response);
+}
+
 cgi_protocol_t *find_pro_handler(const char *pro_opt)
 {
     int i;
@@ -288,3 +401,21 @@ cgi_protocol_t *find_pro_handler(const char *pro_opt)
     }
         return NULL;
 }
+//by luot
+cgi_protocol_t *find_pro_handler_lktos(const char *pro_opt)
+{
+    int i;
+    if(pro_opt == NULL)
+        return NULL;
+    i = 0;
+    while(1){
+        if(pro_list_lktos[i].name == NULL)
+            return NULL;
+        if(strstr(pro_opt,pro_list_lktos[i].name)){
+            return &pro_list_lktos[i];
+        }
+        i++;
+    }
+        return NULL;
+}
+
